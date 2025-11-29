@@ -21,7 +21,9 @@ export async function parseMarkdownFile(filePath: string): Promise<SectionNode> 
  * @returns Root SectionNode representing the document
  */
 export function parseMarkdownContent(content: string, docId?: string): SectionNode {
-    const lines = content.split('\n');
+    // Normalize line endings (handle CRLF from Windows)
+    const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = normalizedContent.split('\n');
 
     // Detect document title (first H1 or use docId)
     const firstH1Match = content.match(/^#\s+(.+)$/m);
