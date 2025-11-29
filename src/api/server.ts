@@ -8,6 +8,7 @@ import { queryRouter } from './routes/query.js';
 import { docsRouter } from './routes/docs.js';
 import { healthRouter } from './routes/health.js';
 import graphRouter from './routes/graph.js';
+import { rateLimitPresets, initAuth, authenticate, getAuthStatus, getRateLimitStats } from '../middleware/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,10 +16,19 @@ const __dirname = path.dirname(__filename);
 export function createApp(): Express {
     const app = express();
 
+    // Initialize authentication
+    initAuth();
+
     // Middleware
     app.use(cors());
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
+    
+    // Rate limiting (relaxed for health checks)
+    app.use(rateLimitPresets.relaxed());
+    
+    // Authentication (can be enabled via API_KEYS env var)
+    app.use(authenticate);
     
     // Serve static files from public directory
     app.use(express.static(path.join(__dirname, '../../public')));
@@ -39,6 +49,17 @@ export function createApp(): Express {
     app.use('/api/query', queryRouter);
     app.use('/api/docs', docsRouter);
     app.use('/api/graph', graphRouter);
+    
+    // Status endpoint (for monitoring)
+    app.get('/api/status', (req: Request, res: Response) => {
+        res.json({
+            status: 'ok',
+            auth: getAuthStatus(),
+            rateLimit: getRateLimitStats(),
+            uptime: process.uptime(),
+            memory: process.memoryUsage()
+        });
+    });
 
     // Root endpoint - serve UI or API info
     app.get('/', (req: Request, res: Response) => {
