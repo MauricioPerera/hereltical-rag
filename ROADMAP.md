@@ -2,6 +2,43 @@
 
 This document tracks planned improvements and feature requests for the Hierarchical RAG system.
 
+## 🆕 Graph Evolution: From Hierarchy to Knowledge Graph
+
+**Status:** Phase 1.5 - In Progress ⚡
+
+hereltical-rag is evolving from a pure hierarchical system to a **knowledge graph**. A tree is a special case of graph, so this is a natural evolution that adds powerful cross-document reasoning capabilities.
+
+**See:** `docs/GRAPH_EVOLUTION.md` for complete design and architecture.
+
+### Evolution Phases
+
+**Phase 1.0** ✅ Hierarchical (Current)
+- Tree structure per document
+- Parent/child/sibling relationships
+- Context limited to single document tree
+
+**Phase 1.5** 🚧 Basic Graph (In Progress)
+- [x] Edges table in SQLite
+- [x] Graph store API
+- [x] SAME_TOPIC detection (cross-document similarity)
+- [x] Graph expansion (BFS, multi-hop)
+- [x] Graph API endpoints
+- [ ] Graph-aware RAG engine
+
+**Phase 2.0** 📋 Advanced Graph (Planned)
+- [ ] REFERS_TO detection (markdown links)
+- [ ] Multi-hop reasoning (2-3 hops)
+- [ ] Reranking by edge types
+- [ ] Graph visualization
+
+**Phase 3.0** 🔮 Entities & Concepts (Future)
+- [ ] Named Entity Recognition
+- [ ] Concept extraction
+- [ ] MENTIONS, DEFINES edges
+- [ ] Graph embeddings
+
+---
+
 ## Current Status: v2.0.0 ✅
 
 ### Fully Implemented Features
@@ -43,12 +80,29 @@ This document tracks planned improvements and feature requests for the Hierarchi
 - [ ] Monitoring dashboard
 
 **Medium Priority (Quality Improvements):**
-- [ ] Hybrid search (vector + keyword)
+- [x] **Graph Evolution (Phase 1.5)** - Basic graph infrastructure ✨ NEW
+  - [x] Edges table in SQLite
+  - [x] Graph store API (create, query, expand edges)
+  - [x] SAME_TOPIC detection (embedding similarity)
+  - [x] Graph expansion algorithm (BFS, multi-hop)
+  - [x] Graph API endpoints
+  - [ ] Graph-aware RAG engine (next step)
+- [ ] Hybrid search (vector + keyword / BM25)
 - [ ] Web UI
 - [ ] LLM integration for answer generation
 - [ ] Advanced markdown parsing (H4+, tables, code blocks)
 
 **Low Priority (Nice to Have):**
+- [ ] Graph Phase 2.0: Advanced features
+  - [ ] Automatic REFERS_TO detection (markdown links)
+  - [ ] Multi-hop reasoning (2-3 hops)
+  - [ ] Reranking by edge type
+  - [ ] Graph visualization endpoint
+- [ ] Graph Phase 3.0: Entities & Concepts
+  - [ ] NER (Named Entity Recognition)
+  - [ ] Concept nodes
+  - [ ] MENTIONS, DEFINES edges
+  - [ ] Graph embeddings
 - [ ] PDF/HTML parsing
 - [ ] Multi-language support
 - [ ] Advanced RAG techniques

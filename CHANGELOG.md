@@ -2,6 +2,41 @@
 
 ## [Unreleased]
 
+### Added
+- **Graph Evolution (Phase 1.5)** 🎯 - Basic knowledge graph infrastructure
+  - Added `edges` table in SQLite for explicit relationships
+  - New `graphStore.ts` with full graph API:
+    - Create/update/delete edges
+    - Query neighbors (incoming/outgoing)
+    - Graph expansion algorithm (BFS, multi-hop)
+    - Graph statistics
+  - New `relationsDetector.ts` for automatic edge detection:
+    - `detectSameTopicEdges()` using embedding similarity
+    - Cosine similarity calculation
+    - Configurable thresholds and limits
+  - Graph API endpoints (`/api/graph/*`):
+    - `GET /api/graph/stats` - Graph statistics
+    - `GET /api/graph/neighbors/:nodeId` - Get neighbors
+    - `GET /api/graph/edges/:nodeId` - Get edges
+    - `POST /api/graph/expand` - Expand from seed nodes
+    - `POST /api/graph/build/same-topic` - Build SAME_TOPIC edges
+  - CLI tool `buildGraph.ts`:
+    - Build SAME_TOPIC edges from command line
+    - View graph statistics
+    - Configurable similarity thresholds
+  - Complete design document: `docs/GRAPH_EVOLUTION.md`
+  - Edge types: PARENT_OF, CHILD_OF, NEXT_SIBLING, PREV_SIBLING, SAME_TOPIC, REFERS_TO
+
+### Changed
+- Updated `vectorStore.ts` to create edges table on initialization
+- Updated API server to include graph routes
+- Expanded ROADMAP with 3-phase graph evolution plan
+
+### Documentation
+- Created `docs/GRAPH_EVOLUTION.md` - Complete graph design and architecture
+- Updated `ROADMAP.md` with graph evolution phases
+- Documented graph API endpoints
+
 ### Tested
 - **embeddinggemma Model** ✅ - Comprehensive testing with Ollama
   - Tested with Google's embeddinggemma (768 dimensions)

@@ -73,6 +73,21 @@ export function getVectorDb() {
       rowid INTEGER PRIMARY KEY,
       embedding FLOAT[2048]
     );
+
+    -- Graph: Edges table for explicit relationships
+    CREATE TABLE IF NOT EXISTS edges (
+      from_node_id TEXT NOT NULL,
+      to_node_id   TEXT NOT NULL,
+      type         TEXT NOT NULL,
+      weight       REAL,
+      metadata     TEXT,
+      created_at   TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (from_node_id, to_node_id, type)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_edges_from ON edges(from_node_id, type);
+    CREATE INDEX IF NOT EXISTS idx_edges_to ON edges(to_node_id, type);
+    CREATE INDEX IF NOT EXISTS idx_edges_type ON edges(type);
   `);
 
   // Migration checks (simplistic for this demo)

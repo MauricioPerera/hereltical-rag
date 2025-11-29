@@ -5,6 +5,7 @@ import { indexRouter } from './routes/index.js';
 import { queryRouter } from './routes/query.js';
 import { docsRouter } from './routes/docs.js';
 import { healthRouter } from './routes/health.js';
+import graphRouter from './routes/graph.js';
 
 export function createApp(): Express {
     const app = express();
@@ -29,6 +30,7 @@ export function createApp(): Express {
     app.use('/api/index', indexRouter);
     app.use('/api/query', queryRouter);
     app.use('/api/docs', docsRouter);
+    app.use('/api/graph', graphRouter);
 
     // Root endpoint
     app.get('/', (req: Request, res: Response) => {
@@ -39,7 +41,8 @@ export function createApp(): Express {
                 health: '/health',
                 index: '/api/index',
                 query: '/api/query',
-                docs: '/api/docs'
+                docs: '/api/docs',
+                graph: '/api/graph'
             }
         });
     });
@@ -89,6 +92,8 @@ export async function startServer(): Promise<void> {
         console.log(`   - POST http://${host}:${port}/api/index`);
         console.log(`   - POST http://${host}:${port}/api/query`);
         console.log(`   - GET  http://${host}:${port}/api/docs/:docId`);
+        console.log(`   - GET  http://${host}:${port}/api/graph/stats`);
+        console.log(`   - POST http://${host}:${port}/api/graph/build/same-topic`);
         console.log('\n Press Ctrl+C to stop\n');
     });
 }
