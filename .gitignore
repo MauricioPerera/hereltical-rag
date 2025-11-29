@@ -3,3 +3,6 @@ dist
 rag.db
 documents.json
 .DS_Store
+.env
+*.log
+test-rag.db

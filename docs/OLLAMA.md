@@ -46,6 +46,9 @@ ollama pull nomic-embed-text
 
 **Other options:**
 ```bash
+# Google's embeddinggemma (768 dims, excellent quality)
+ollama pull embeddinggemma
+
 # High quality, larger
 ollama pull mxbai-embed-large
 
@@ -91,6 +94,33 @@ API_HOST=localhost
 ```bash
 ollama pull nomic-embed-text
 ```
+
+### embeddinggemma
+- **Dimensions**: 768
+- **Size**: ~621 MB
+- **Best for**: High quality embeddings, Google's matryoshka-trained model
+- **Context length**: 2048 tokens
+- **Special**: Trained with matryoshka representation learning (excellent for truncation)
+
+```bash
+ollama pull embeddinggemma
+```
+
+**Tested configuration with matryoshka:**
+```env
+EMBEDDING_SERVICE=ollama
+OLLAMA_EMBEDDING_MODEL=embeddinggemma
+MATRYOSHKA_ENABLED=true
+MATRYOSHKA_DIMENSIONS=384  # 50% reduction, ~80% quality retention
+```
+
+**Performance results:**
+- Search scores: 0.62-0.93 (excellent relevance)
+- Speed: < 100ms per query
+- Storage: 50% reduction with matryoshka
+- Quality: ~80% retention at 384 dims
+
+See `PRUEBAS_GEMMA.md` for detailed test results.
 
 ### mxbai-embed-large
 - **Dimensions**: 1024

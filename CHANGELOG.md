@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Tested
+- **embeddinggemma Model** ✅ - Comprehensive testing with Ollama
+  - Tested with Google's embeddinggemma (768 dimensions)
+  - Validated matryoshka truncation (768 → 384 dims)
+  - Performance verified: 0.62-0.93 search scores, < 100ms queries
+  - Multi-document search validated across 2 indexed documents
+  - Full test report available in `PRUEBAS_GEMMA.md`
+  - Created example document `docs/ai-history.md` for testing
+  - Automated test script `test-gemma.sh` for easy validation
+
 ### Added
 - **Matryoshka Embeddings Support** 🪆 - Storage & speed optimization
   - Truncate embeddings to reduce storage by 50-75%

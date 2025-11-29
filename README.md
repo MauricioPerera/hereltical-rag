@@ -274,7 +274,8 @@ echo "OLLAMA_URL=http://localhost:11434" >> .env
 ```
 
 **Supported Models:**
-- `nomic-embed-text` (768 dimensions) - Recommended
+- `nomic-embed-text` (768 dimensions) - Recommended for general use
+- `embeddinggemma` (768 dimensions) - Excellent with matryoshka, tested ✅
 - `mxbai-embed-large` (1024 dimensions) - High quality
 - `all-minilm` (384 dimensions) - Fast and lightweight
 
@@ -283,6 +284,23 @@ echo "OLLAMA_URL=http://localhost:11434" >> .env
 - Privacy-preserving (data stays on your machine)
 - No internet required
 - Customizable models
+
+**Example: embeddinggemma with matryoshka**
+```bash
+# Pull Google's embedding model
+ollama pull embeddinggemma
+
+# Configure with matryoshka optimization
+cat >> .env << 'EOF'
+EMBEDDING_SERVICE=ollama
+OLLAMA_EMBEDDING_MODEL=embeddinggemma
+MATRYOSHKA_ENABLED=true
+MATRYOSHKA_DIMENSIONS=384
+EOF
+
+# Results: 0.62-0.93 search scores, <100ms queries, 50% storage reduction
+# See PRUEBAS_GEMMA.md for detailed test results
+```
 
 **Configuration options** (`.env`):
 ```env

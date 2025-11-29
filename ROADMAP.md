@@ -12,7 +12,12 @@ This document tracks planned improvements and feature requests for the Hierarchi
 - [x] Mock embeddings (deterministic, for testing)
 - [x] OpenAI embeddings integration with batch processing
 - [x] Ollama embeddings integration (local AI)
+  - [x] nomic-embed-text support
+  - [x] embeddinggemma tested and validated
+  - [x] mxbai-embed-large support
 - [x] Matryoshka embeddings support (storage optimization)
+  - [x] Tested with embeddinggemma (768 → 384 dims)
+  - [x] Performance validated: 50% storage reduction, ~80% quality
 - [x] Change detection and incremental sync (SHA-256 hashing)
 - [x] Markdown parser (H1/H2/H3 hierarchy)
 
