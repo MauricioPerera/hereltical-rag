@@ -14,6 +14,17 @@ This project demonstrates how to build a RAG system that understands document st
 -   **Efficient Sync**: Implements change detection (hashing) to only re-embed modified sections, handling updates and deletions gracefully.
 -   **Local & Fast**: Runs entirely locally without external vector DB dependencies.
 
+## Requirements
+
+-   **Node.js** 18+ (recommended: 20.x)
+-   **npm** or **yarn**
+-   **SQLite** with `sqlite-vec` extension (automatically loaded via npm package)
+
+The project uses:
+-   **ESM** (ES Modules) - requires Node.js with native ESM support
+-   **TypeScript** 5.6+ with strict mode
+-   **sqlite-vec** 0.1.1+ for vector operations (installed via npm, no manual setup needed)
+
 ## Installation
 
 1.  Clone the repository:
@@ -27,7 +38,16 @@ This project demonstrates how to build a RAG system that understands document st
     npm install
     ```
 
+3.  Verify installation:
+    ```bash
+    npm test
+    ```
+    
+    You should see all 32 tests passing.
+
 ## Usage
+
+### Demo Script
 
 The project includes a verification script that demonstrates the full pipeline:
 
@@ -40,6 +60,48 @@ This script will:
 2.  Index it (generating deterministic mock embeddings).
 3.  Perform a hierarchical search (Topic -> Detail).
 4.  Demonstrate the sync logic by modifying, adding, and deleting nodes.
+
+**Example Output:**
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║     Hierarchical RAG Demo - Phase 4 (Sync & Updates)         ║
+╚════════════════════════════════════════════════════════════════╝
+
+[STEP 1] Initial Document Creation & Indexing
+─────────────────────────────────────────────────
+🔄 Syncing document: doc-sync-test
+   ➕ Indexing new node: sec-1
+   ➕ Indexing new node: root
+✅ Sync complete for doc-sync-test
+
+[STEP 2] Document Modifications
+─────────────────────────────────────────────────
+  • Modifying sec-1 content
+  • Adding new sec-3
+  • Deleting sec-2
+
+🔄 Syncing document: doc-sync-test
+   📝 Updating changed node: sec-1
+   ➕ Indexing new node: sec-3
+   🗑️  Deleting stale node: sec-2
+✅ Sync complete for doc-sync-test
+
+[STEP 3] Verification - Testing Change Detection
+─────────────────────────────────────────────────
+✅ Modified node found (sec-1) - Distance: 0.0
+✅ New node found (sec-3) - Distance: 0.0
+✅ Deleted node is gone (sec-2)
+
+╔════════════════════════════════════════════════════════════════╗
+║              ✅ Phase 4 Verification Successful!              ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+This demonstrates:
+- **Hierarchical context**: Retrieves parent and sibling nodes for richer context
+- **Change detection**: Only re-embeds modified sections (via SHA-256 hashing)
+- **Incremental sync**: Handles additions, modifications, and deletions efficiently
 
 ## Testing
 
@@ -77,13 +139,124 @@ For detailed testing information, see [TESTING.md](TESTING.md).
 
 ## Architecture
 
+### System Flow
+
+```
+┌─────────────┐
+│  Markdown   │
+│   Document  │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────┐
+│ Markdown Parser │  Extracts H1/H2/H3 hierarchy
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│  SectionNode    │  Tree structure built
+│     Tree        │
+└──────┬──────────┘
+       │
+       ├──────────────────────────┐
+       │                          │
+       ▼                          ▼
+┌─────────────┐          ┌─────────────────┐
+│   lowdb     │          │    Indexer      │
+│ (JSON Store)│          │                 │
+│             │          │ • Hash content  │
+│ • Structure │          │ • Detect changes│
+│ • Metadata  │          │ • Generate      │
+│ • Relations │          │   embeddings    │
+└─────────────┘          └────────┬────────┘
+                                  │
+                                  ▼
+                         ┌─────────────────┐
+                         │   sqlite-vec    │
+                         │  (Vector Store) │
+                         │                 │
+                         │ • Embeddings    │
+                         │ • Metadata      │
+                         │ • KNN Search    │
+                         └────────┬────────┘
+                                  │
+       ┌──────────────────────────┘
+       │
+       ▼
+┌─────────────────┐
+│  Query Vector   │  User query embedded
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│   KNN Search    │  Find top-k similar sections
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│   node_id(s)    │  Retrieved from vector search
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│  JSON Lookup    │  Get node + parent + siblings
+│   (lowdb)       │  from document tree
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│  Hierarchical   │  Rich context with structure
+│    Context      │
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│      LLM        │  Generate answer with context
+│   (Future)      │
+└─────────────────┘
+```
+
+**Key Insight:** The `node_id` is the bridge between the vector search (similarity) and the hierarchical structure (context). This allows us to find relevant content via embeddings, then enrich it with parent/sibling context from the JSON tree.
+
 ### Core Modules
 
 -   **`src/db/jsonStore.ts`**: Manages the document structure in `documents.json`. Provides navigation methods (`getParent`, `getSiblings`).
 -   **`src/db/vectorStore.ts`**: Manages embeddings in `rag.db` using `sqlite-vec`. Supports filtered KNN search.
 -   **`src/indexer.ts`**: Handles the synchronization logic. It traverses the document tree, hashes content to detect changes, and updates the vector store accordingly.
 -   **`src/ragEngine.ts`**: Orchestrates the retrieval process, combining vector search results with structural context from the JSON store.
--   **`src/embeddings.ts`**: Provides embedding generation. Currently uses deterministic mock embeddings for testing. **For production**, replace with OpenAI API or local model while maintaining the same signature: `async embed(text: string): Promise<number[]>`.
+-   **`src/embeddings/`**: Modular embedding system with support for mock and OpenAI embeddings.
+
+### Using Real Embeddings
+
+The system currently uses **deterministic mock embeddings** for testing and development (no API key required). To use **real OpenAI embeddings** in production:
+
+1. **Set your API key:**
+   ```bash
+   echo "OPENAI_API_KEY=sk-your-key-here" > .env
+   echo "EMBEDDING_SERVICE=openai" >> .env
+   ```
+
+2. **The system automatically switches** to OpenAI's `text-embedding-3-small` model (1536 dimensions).
+
+3. **Configuration options** (`.env`):
+   ```env
+   OPENAI_API_KEY=sk-...              # Your OpenAI API key
+   EMBEDDING_SERVICE=openai           # 'mock' or 'openai'
+   OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # Model to use
+   ```
+
+**For local models** (e.g., sentence-transformers), implement a new service in `src/embeddings/` following the same interface:
+
+```typescript
+// src/embeddings/localEmbeddings.ts
+export async function generateLocalEmbedding(text: string): Promise<number[]> {
+  // Your local model implementation
+  // Must return array of 1536 numbers (or configure different dimension)
+  return embeddings;
+}
+```
+
+Then update `src/embeddings/index.ts` to add your service option.
 
 ### Data Model
 
@@ -109,6 +282,40 @@ interface Document {
   nodes: Record<string, NodeMeta>  // Fast lookup map
 }
 ```
+
+**Example `SectionNode` tree:**
+
+```typescript
+{
+  id: "sec-2",
+  type: "section",
+  level: 1,
+  title: "Regularización L2",
+  content: [],
+  children: [
+    {
+      id: "sec-2-1",
+      type: "section",
+      level: 2,
+      title: "Definición",
+      content: ["La regularización L2 agrega un término λ||w||² al loss..."],
+      children: []
+    },
+    {
+      id: "sec-2-2",
+      type: "section",
+      level: 2,
+      title: "Implementación práctica",
+      content: ["En la práctica, L2 suele implementarse como weight decay..."],
+      children: []
+    }
+  ]
+}
+```
+
+**Key point:** The `id` field (e.g., `"sec-2-1"`) is the **stable anchor** that links:
+- JSON structure (lowdb) ↔ Vector embeddings (SQLite)
+- This allows updates without breaking references
 
 The `nodes` map provides O(1) access to parent/children relationships:
 
@@ -289,7 +496,9 @@ The system now supports real OpenAI embeddings:
 
 3. For development/testing, use `EMBEDDING_SERVICE=mock` for deterministic mock embeddings
 
-## Next Steps / Roadmap
+## Next Steps
+
+See [ROADMAP.md](ROADMAP.md) for detailed feature plans and timeline.
 
 ### Recently Completed ✅
 
@@ -297,28 +506,31 @@ The system now supports real OpenAI embeddings:
 2.  ✅ **Real Embeddings** - OpenAI API integration with configurable models
 3.  ✅ **HTTP API** - Full REST API with index, query, and document management
 4.  ✅ **CLI Tools** - Command-line utilities for indexing files and directories
+5.  ✅ **Configuration System** - Environment-based config with validation
+6.  ✅ **Comprehensive Docs** - 11 documentation files covering all aspects
 
-### Future Enhancements
+### High Priority (Next Quarter)
 
-1.  **Hybrid Search**
-    - Combine vector similarity with keyword matching
-    - Full-text search on `title` and `content` fields
-    - Reranking based on both signals
+1.  **🔍 Hybrid Search** - Combine vector similarity with keyword matching (BM25)
+2.  **🔐 Authentication** - API key auth, user management, rate limiting
+3.  **⚡ Performance** - Query caching, batch processing, connection pooling
+4.  **🤖 LLM Integration** - Direct OpenAI/Ollama integration for answer generation
+5.  **📊 Monitoring** - Metrics, analytics, health dashboard
 
-2.  **Result Diversity**
-    - Limit results from same document branch
-    - MMR (Maximal Marginal Relevance) for diverse sections
+### Medium Priority
 
-3.  **Performance Optimizations**
-    - Batch embedding generation (already supported for OpenAI)
-    - Incremental indexing for large documents
-    - Query caching
+6.  **🖥️ Web UI** - Interactive document viewer, search interface, admin panel
+7.  **📚 Advanced Docs** - PDF parsing, HTML support, multi-format indexing
+8.  **🎯 Result Quality** - MMR diversity, reranking, confidence scores
+9.  **📈 Analytics** - Query patterns, usage tracking, cost monitoring
 
-4.  **Additional Features**
-    - Document versioning and updates
-    - Delete operations for documents
-    - Bulk indexing with progress tracking
-    - Web UI for visualization and testing
+### Experimental / Research
+
+10. **🌐 Multi-language** - Cross-lingual search and embeddings
+11. **🔗 Graph RAG** - Knowledge graph integration
+12. **🔒 Privacy** - Encrypted embeddings, local-only mode
+
+**Want to contribute?** Check [ROADMAP.md](ROADMAP.md) for details on planned features and how to help!
 
 ## Documentation
 
