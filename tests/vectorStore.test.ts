@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { upsertSection, searchKnn, getSectionMeta, deleteSection, getDocNodeIds, SectionRow } from '../src/db/vectorStore';
+import { upsertSection, searchKnn, getSectionMeta, deleteSection, getDocNodeIds, SectionRow, setDbPath, closeDb } from '../src/db/vectorStore';
 import { embed } from '../src/embeddings';
 import fs from 'node:fs';
 
@@ -7,15 +7,35 @@ const TEST_DB_PATH = 'test-rag.db';
 
 describe('vectorStore', () => {
     beforeEach(() => {
-        if (fs.existsSync(TEST_DB_PATH)) {
-            fs.unlinkSync(TEST_DB_PATH);
+        // Close any existing connection and set test path
+        closeDb();
+        setDbPath(TEST_DB_PATH);
+
+        // Clean up any existing test database
+        try {
+            if (fs.existsSync(TEST_DB_PATH)) {
+                fs.unlinkSync(TEST_DB_PATH);
+            }
+        } catch (error) {
+            // Ignore if file is locked (Windows issue)
         }
     });
 
     afterEach(() => {
-        if (fs.existsSync(TEST_DB_PATH)) {
-            fs.unlinkSync(TEST_DB_PATH);
+        // Close connection before cleanup
+        closeDb();
+
+        // Clean up test database
+        try {
+            if (fs.existsSync(TEST_DB_PATH)) {
+                fs.unlinkSync(TEST_DB_PATH);
+            }
+        } catch (error) {
+            // Ignore if file is locked
         }
+
+        // Reset to default path
+        setDbPath('rag.db');
     });
 
     describe('upsertSection', () => {

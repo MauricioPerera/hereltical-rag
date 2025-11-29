@@ -49,18 +49,31 @@ Run the comprehensive test suite:
 npm test
 ```
 
+### Test Suite Results ✅
+
+**Status:** All tests passing (100%)
+
 The test suite includes:
 -   **Embeddings**: 4 tests for deterministic mock embeddings
 -   **Vector Store**: 9 tests covering CRUD operations, KNN search, and filtering
 -   **JSON Store**: 8 tests for document management and tree navigation
 -   **Indexer**: 4 tests for sync logic (change detection, updates, deletions)
+-   **Markdown Parser**: 7 tests for H1/H2/H3 parsing and tree building
 
-**Total: 17 tests** covering all core functionality.
+**Total: 32 tests** covering all core functionality.
+
+```
+Test Files  5 passed (5)
+     Tests  32 passed (32)
+  Duration  ~10-12 seconds
+```
 
 For watch mode during development:
 ```bash
 npm run test:watch
 ```
+
+For detailed testing information, see [TESTING.md](TESTING.md).
 
 ## Architecture
 
@@ -145,40 +158,179 @@ CREATE VIRTUAL TABLE vec_sections USING vec0(
 3.  **Phase 3: Hierarchical Search**: Implemented filtering and multi-step search strategies.
 4.  **Phase 4: Updates & Maintenance**: Added hashing for change detection and efficient syncing.
 
+## HTTP API
+
+The project now includes a REST API for indexing and querying documents.
+
+### Starting the Server
+
+```bash
+npm run server
+```
+
+The server will start on `http://localhost:3000` by default.
+
+### Configuration
+
+Create a `.env` file in the project root:
+
+```env
+# OpenAI Configuration (optional - uses mock embeddings by default)
+OPENAI_API_KEY=your_api_key_here
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+
+# Embedding Service: 'mock' or 'openai'
+EMBEDDING_SERVICE=mock
+
+# API Configuration
+API_PORT=3000
+API_HOST=localhost
+
+# Database Paths
+DB_PATH=rag.db
+JSON_PATH=documents.json
+```
+
+### API Endpoints
+
+#### Health Check
+```bash
+GET /health
+```
+
+Returns server status and configuration info.
+
+#### Index a Document
+```bash
+POST /api/index
+Content-Type: application/json
+
+{
+  "docId": "my-doc",
+  "title": "My Document",
+  "content": "# Main Title\n\n## Section 1\n\nContent here...",
+  "version": 1
+}
+```
+
+#### Query with Hierarchical Context
+```bash
+POST /api/query
+Content-Type: application/json
+
+{
+  "query": "What is regularization?",
+  "k": 3,
+  "filters": {
+    "doc_id": "ml-guide",
+    "level": 2,
+    "is_leaf": 1
+  }
+}
+```
+
+#### Raw Vector Search
+```bash
+POST /api/query/search
+Content-Type: application/json
+
+{
+  "query": "machine learning",
+  "k": 5
+}
+```
+
+#### List All Documents
+```bash
+GET /api/docs
+```
+
+#### Get Document by ID
+```bash
+GET /api/docs/:docId
+```
+
+#### Get Document Structure
+```bash
+GET /api/docs/:docId/structure
+```
+
+#### Get Document Sections
+```bash
+GET /api/docs/:docId/sections
+```
+
+## CLI Tools
+
+### Index a Markdown File
+
+```bash
+# Index a single file
+tsx src/cli/indexFile.ts ./path/to/document.md
+
+# Index with custom doc ID
+tsx src/cli/indexFile.ts ./path/to/document.md custom-id
+
+# Index all markdown files in a directory
+tsx src/cli/indexFile.ts --dir ./docs
+```
+
+## OpenAI Integration
+
+The system now supports real OpenAI embeddings:
+
+1. Set your OpenAI API key in `.env`:
+   ```env
+   OPENAI_API_KEY=sk-...
+   EMBEDDING_SERVICE=openai
+   ```
+
+2. The system will automatically use OpenAI's `text-embedding-3-small` model (or configure with `OPENAI_EMBEDDING_MODEL`)
+
+3. For development/testing, use `EMBEDDING_SERVICE=mock` for deterministic mock embeddings
+
 ## Next Steps / Roadmap
 
-### Short-term (Ready to implement)
+### Recently Completed ✅
 
-1.  **Markdown Parser**
-    - Convert `.md` files to `SectionNode[]` hierarchy
-    - Parse H1/H2/H3 headings as tree structure
-    - Extract paragraph content for each section
+1.  ✅ **Markdown Parser** - Parse H1/H2/H3 headings as tree structure
+2.  ✅ **Real Embeddings** - OpenAI API integration with configurable models
+3.  ✅ **HTTP API** - Full REST API with index, query, and document management
+4.  ✅ **CLI Tools** - Command-line utilities for indexing files and directories
 
-2.  **Real Embeddings**
-    - Replace mock embeddings with OpenAI API integration
-    - Support for local models (e.g., sentence-transformers)
-    - Configurable embedding dimensions
+### Future Enhancements
 
-3.  **HTTP API**
-    - `POST /index` - Upload and index documents
-    - `POST /query` - Semantic search with hierarchical context
-    - `GET /docs/:id` - Retrieve document structure
-
-### Medium-term (Future enhancements)
-
-4.  **Hybrid Search**
+1.  **Hybrid Search**
     - Combine vector similarity with keyword matching
     - Full-text search on `title` and `content` fields
     - Reranking based on both signals
 
-5.  **Result Diversity**
+2.  **Result Diversity**
     - Limit results from same document branch
     - MMR (Maximal Marginal Relevance) for diverse sections
 
-6.  **Performance Optimizations**
-    - Batch embedding generation
+3.  **Performance Optimizations**
+    - Batch embedding generation (already supported for OpenAI)
     - Incremental indexing for large documents
     - Query caching
+
+4.  **Additional Features**
+    - Document versioning and updates
+    - Delete operations for documents
+    - Bulk indexing with progress tracking
+    - Web UI for visualization and testing
+
+## Documentation
+
+This project includes comprehensive documentation:
+
+- **[QUICK_START.md](QUICK_START.md)** - Get started in 5 minutes
+- **[TESTING.md](TESTING.md)** - Complete testing guide and results
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Executive summary
+- **[examples/test-api.md](examples/test-api.md)** - API testing guide
+- **[examples/quick-start.sh](examples/quick-start.sh)** - Quick start script
 
 ## License
 

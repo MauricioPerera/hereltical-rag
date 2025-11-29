@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
+    "server": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -13,12 +15,18 @@
   "license": "ISC",
   "dependencies": {
     "better-sqlite3": "^11.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
     "lowdb": "^7.0.1",
+    "openai": "^6.9.1",
     "sqlite-vec": "^0.1.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
     "@types/node": "^22.9.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",

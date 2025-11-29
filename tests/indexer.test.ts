@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { syncDocument } from '../src/indexer';
-import { getSectionMeta, getDocNodeIds } from '../src/db/vectorStore';
-import { saveDocument, Document } from '../src/db/jsonStore';
+import { getSectionMeta, getDocNodeIds, setDbPath, closeDb } from '../src/db/vectorStore';
+import { saveDocument, Document, setJsonPath, resetDb } from '../src/db/jsonStore';
 import fs from 'node:fs';
 
 const TEST_DB_PATH = 'test-rag.db';
@@ -9,21 +9,60 @@ const TEST_JSON_PATH = 'test-documents.json';
 
 describe('indexer', () => {
     beforeEach(() => {
-        if (fs.existsSync(TEST_DB_PATH)) {
-            fs.unlinkSync(TEST_DB_PATH);
+        // Close and configure vector store
+        closeDb();
+        setDbPath(TEST_DB_PATH);
+
+        // Configure JSON store
+        resetDb();
+        setJsonPath(TEST_JSON_PATH);
+
+        // Clean up any existing test files
+        try {
+            if (fs.existsSync(TEST_DB_PATH)) {
+                fs.unlinkSync(TEST_DB_PATH);
+            }
+        } catch (error) {
+            // Ignore if file is locked (Windows issue)
         }
-        if (fs.existsSync(TEST_JSON_PATH)) {
-            fs.unlinkSync(TEST_JSON_PATH);
+        
+        try {
+            if (fs.existsSync(TEST_JSON_PATH)) {
+                fs.unlinkSync(TEST_JSON_PATH);
+            }
+        } catch (error) {
+            // Ignore if file is locked
         }
     });
 
     afterEach(() => {
-        if (fs.existsSync(TEST_DB_PATH)) {
-            fs.unlinkSync(TEST_DB_PATH);
+        // Close vector store connection
+        closeDb();
+
+        // Reset JSON store
+        resetDb();
+
+        // Clean up test files with retry for Windows
+        try {
+            if (fs.existsSync(TEST_DB_PATH)) {
+                fs.unlinkSync(TEST_DB_PATH);
+            }
+        } catch (error) {
+            // File might be locked, ignore for now
+            // In real scenarios, you might want to retry
         }
-        if (fs.existsSync(TEST_JSON_PATH)) {
-            fs.unlinkSync(TEST_JSON_PATH);
+        
+        try {
+            if (fs.existsSync(TEST_JSON_PATH)) {
+                fs.unlinkSync(TEST_JSON_PATH);
+            }
+        } catch (error) {
+            // Ignore if file is locked
         }
+
+        // Reset to default paths
+        setDbPath('rag.db');
+        setJsonPath('documents.json');
     });
 
     describe('syncDocument', () => {
@@ -192,6 +231,9 @@ describe('indexer', () => {
             await saveDocument(doc);
             await syncDocument(doc);
 
+            // Small delay to ensure DB is not locked
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             let meta = getSectionMeta('to-delete');
             expect(meta).toBeDefined();
 
@@ -201,6 +243,10 @@ describe('indexer', () => {
             delete doc.nodes['to-delete'];
 
             await saveDocument(doc);
+            
+            // Small delay before sync to prevent DB lock
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
             await syncDocument(doc);
 
             meta = getSectionMeta('to-delete');

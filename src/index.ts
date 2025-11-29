@@ -30,18 +30,13 @@ async function main() {
             content: [],
             children: []
         },
-        nodes: {} // We'll skip populating nodes map manually for this test as syncDocument relies on the tree structure passed in
+        nodes: {}
     };
-    // Note: syncDocument traverses the tree structure in doc.root. 
-    // jsonStore's saveDocument expects doc.nodes to be populated for navigation, 
-    // but for indexer.ts we just need the tree.
-    // Let's populate doc.nodes roughly to be safe if we save it.
 
     const sec1 = createSection('sec-1', 'Original Section 1', ['Content 1'], 1);
     const sec2 = createSection('sec-2', 'Original Section 2', ['Content 2'], 1);
     doc.root.children.push(sec1, sec2);
 
-    // Populate nodes map for jsonStore (though we might not use jsonStore navigation in this specific test)
     doc.nodes['root'] = { id: 'root', parentId: null, childrenIds: ['sec-1', 'sec-2'], level: 0 };
     doc.nodes['sec-1'] = { id: 'sec-1', parentId: 'root', childrenIds: [], level: 1 };
     doc.nodes['sec-2'] = { id: 'sec-2', parentId: 'root', childrenIds: [], level: 1 };
@@ -55,6 +50,7 @@ async function main() {
     console.log('  • Modifying sec-1 content');
     console.log('  • Adding new sec-3');
     console.log('  • Deleting sec-2\n');
+
     // 1. Modify sec-1
     sec1.content = ['Content 1 MODIFIED'];
 
@@ -67,6 +63,20 @@ async function main() {
     // 3. Delete sec-2
     doc.root.children = doc.root.children.filter(n => n.id !== 'sec-2');
     doc.nodes['root'].childrenIds = doc.nodes['root'].childrenIds.filter(id => id !== 'sec-2');
+    delete doc.nodes['sec-2'];
+
+    await saveDocument(doc);
+    await syncDocument(doc);
+
+    // --- Verification ---
+    console.log('\n[STEP 3] Verification - Testing Change Detection');
+    console.log('─────────────────────────────────────────────────');
+
+    // Check if sec-1 is updated
+    const exactText = "Original Section 1\nContent 1 MODIFIED";
+    const q1 = await embed(exactText);
+    const r1 = searchKnn(q1, 1, { doc_id: docId });
+
     if (r1.length > 0 && r1[0].node_id === 'sec-1') {
         console.log(`✅ Modified node found (sec-1) - Distance: ${r1[0].distance}`);
     } else {
@@ -85,19 +95,20 @@ async function main() {
     }
 
     // Check if sec-2 is gone
-    // Search for its old exact content
     const exactText2 = "Original Section 2\nContent 2";
     const q2 = await embed(exactText2);
     const r2 = searchKnn(q2, 5, { doc_id: docId });
-    // Since embeddings are random-ish hashes, we might find *something*, but it shouldn't be sec-2
     const foundSec2 = r2.find(r => r.node_id === 'sec-2');
+
     if (!foundSec2) {
         console.log('✅ Deleted node is gone (sec-2)');
     } else {
         console.error('❌ Deleted node STILL EXISTS');
     }
 
-    console.log('\n✅ Phase 4 Verification Successful!');
+    console.log('\n╔════════════════════════════════════════════════════════════════╗');
+    console.log('║              ✅ Phase 4 Verification Successful!              ║');
+    console.log('╚════════════════════════════════════════════════════════════════╝');
 }
 
 main().catch(console.error);

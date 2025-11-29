@@ -1,23 +1,32 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { saveDocument, loadDocument, getNode, getParent, getSiblings, Document, SectionNode } from '../src/db/jsonStore';
+import { saveDocument, loadDocument, getNode, getParent, getSiblings, Document, SectionNode, setJsonPath, resetDb } from '../src/db/jsonStore';
 import fs from 'node:fs';
 
 const TEST_DB_PATH = 'test-documents.json';
 
 describe('jsonStore', () => {
     beforeEach(() => {
+        // Reset and configure JSON store with test path
+        resetDb();
+        setJsonPath(TEST_DB_PATH);
+
         // Clean up any existing test database
         if (fs.existsSync(TEST_DB_PATH)) {
             fs.unlinkSync(TEST_DB_PATH);
         }
-        // Override the DB_PATH for testing (not ideal, but works for now)
-        // In a production system, we'd inject the path as a parameter
     });
 
     afterEach(() => {
+        // Reset JSON store
+        resetDb();
+
+        // Clean up test database
         if (fs.existsSync(TEST_DB_PATH)) {
             fs.unlinkSync(TEST_DB_PATH);
         }
+
+        // Reset to default path
+        setJsonPath('documents.json');
     });
 
     describe('saveDocument and loadDocument', () => {

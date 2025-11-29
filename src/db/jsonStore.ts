@@ -30,13 +30,34 @@ export interface Data {
 
 const defaultData: Data = { documents: [] };
 
+let JSON_PATH = 'documents.json';
+
 // Initialize the database
 // We use a singleton pattern for simplicity in this phase
 let dbInstance: Awaited<ReturnType<typeof JSONFilePreset<Data>>> | null = null;
 
+/**
+ * Set a custom JSON file path (useful for testing)
+ * Must be called before any database operations
+ */
+export function setJsonPath(path: string) {
+    if (dbInstance) {
+        throw new Error('Cannot change JSON path after database is initialized. Call resetDb() first.');
+    }
+    JSON_PATH = path;
+}
+
+/**
+ * Reset the database instance
+ * Useful for cleanup in tests
+ */
+export function resetDb() {
+    dbInstance = null;
+}
+
 export async function getDb() {
     if (!dbInstance) {
-        dbInstance = await JSONFilePreset<Data>('documents.json', defaultData);
+        dbInstance = await JSONFilePreset<Data>(JSON_PATH, defaultData);
     }
     return dbInstance;
 }

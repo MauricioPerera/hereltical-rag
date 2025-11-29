@@ -17,9 +17,31 @@ export interface SearchResult {
   distance: number;
 }
 
-const DB_PATH = 'rag.db';
+let DB_PATH = 'rag.db';
 
 let dbInstance: Database.Database | null = null;
+
+/**
+ * Set a custom database path (useful for testing)
+ * Must be called before any database operations
+ */
+export function setDbPath(path: string) {
+  if (dbInstance) {
+    throw new Error('Cannot change DB path after database is initialized. Call closeDb() first.');
+  }
+  DB_PATH = path;
+}
+
+/**
+ * Close the database connection and reset the instance
+ * Useful for cleanup in tests
+ */
+export function closeDb() {
+  if (dbInstance) {
+    dbInstance.close();
+    dbInstance = null;
+  }
+}
 
 export function getVectorDb() {
   if (dbInstance) return dbInstance;
