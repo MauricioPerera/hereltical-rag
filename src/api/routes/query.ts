@@ -204,7 +204,7 @@ queryRouter.post('/graph', async (req: Request, res: Response) => {
  * Smart graph-aware query with sensible defaults
  * 
  * This is the recommended endpoint for production use.
- * It uses hybrid RAG: vector search + graph expansion.
+ * It uses hybrid RAG: vector search + graph expansion + reranking.
  * 
  * Body:
  * {
@@ -214,7 +214,9 @@ queryRouter.post('/graph', async (req: Request, res: Response) => {
  *   "maxHops": 1,                 // Graph hops (1-2 recommended)
  *   "maxNodes": 10,               // Max total nodes
  *   "edgeTypes": ["SAME_TOPIC"],  // Edge types to follow
- *   "minWeight": 0.75             // Min edge weight for SAME_TOPIC
+ *   "minWeight": 0.75,            // Min edge weight for SAME_TOPIC
+ *   "rerank": true,               // Enable reranking by edge type
+ *   "maxPerDocument": 3           // Max results per document (diversity)
  * }
  */
 queryRouter.post('/smart', async (req: Request, res: Response) => {
@@ -225,8 +227,10 @@ queryRouter.post('/smart', async (req: Request, res: Response) => {
             useGraph = true,
             maxHops = 1,
             maxNodes = 10,
-            edgeTypes = ['SAME_TOPIC', 'PARENT_OF', 'CHILD_OF'],
-            minWeight = 0.75
+            edgeTypes = ['SAME_TOPIC', 'REFERS_TO', 'PARENT_OF', 'CHILD_OF'],
+            minWeight = 0.75,
+            rerank = true,
+            maxPerDocument
         } = req.body;
         
         if (!query || typeof query !== 'string') {
@@ -236,7 +240,7 @@ queryRouter.post('/smart', async (req: Request, res: Response) => {
             });
         }
         
-        // Use the new graph RAG engine
+        // Use the new graph RAG engine with reranking
         const result = await graphRagQuery(query, {
             k,
             expandGraph: useGraph,
@@ -246,7 +250,9 @@ queryRouter.post('/smart', async (req: Request, res: Response) => {
                 edgeTypes: edgeTypes as EdgeType[],
                 minWeight
             } : undefined,
-            includeContext: true
+            includeContext: true,
+            rerank,
+            maxPerDocument
         });
         
         res.json(result);

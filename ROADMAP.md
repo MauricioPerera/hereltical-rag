@@ -4,7 +4,7 @@ This document tracks planned improvements and feature requests for the Hierarchi
 
 ## 🆕 Graph Evolution: From Hierarchy to Knowledge Graph
 
-**Status:** Phase 1.5 - COMPLETED ✅ | Phase 2.0 - Next 📋
+**Status:** Phase 1.5 - COMPLETED ✅ | Phase 2.0 - COMPLETED ✅ | Phase 3.0 - Next 📋
 
 hereltical-rag has evolved from a pure hierarchical system to a **knowledge graph** with **hybrid retrieval** (vector + graph). A tree is a special case of graph, and this evolution adds powerful cross-document reasoning capabilities.
 
@@ -31,11 +31,11 @@ hereltical-rag has evolved from a pure hierarchical system to a **knowledge grap
 - [x] Hybrid retrieval (vector + graph)
 - [x] Documentation and examples
 
-**Phase 2.0** 📋 Advanced Graph (Planned)
-- [ ] REFERS_TO detection (markdown links)
-- [ ] Multi-hop reasoning (2-3 hops)
-- [ ] Reranking by edge types
-- [ ] Graph visualization
+**Phase 2.0** ✅ Advanced Graph (COMPLETED)
+- [x] REFERS_TO detection (markdown links) ✅
+- [x] Reranking by edge types ✅
+- [x] Graph visualization ✅
+- [x] Multi-hop reasoning (1-3 hops with decay) ✅
 
 **Phase 3.0** 🔮 Entities & Concepts (Future)
 - [ ] Named Entity Recognition
@@ -99,11 +99,11 @@ hereltical-rag has evolved from a pure hierarchical system to a **knowledge grap
 - [ ] Advanced markdown parsing (H4+, tables, code blocks)
 
 **Low Priority (Nice to Have):**
-- [ ] Graph Phase 2.0: Advanced features
-  - [ ] Automatic REFERS_TO detection (markdown links)
-  - [ ] Multi-hop reasoning (2-3 hops)
-  - [ ] Reranking by edge type
-  - [ ] Graph visualization endpoint
+- [x] ~~Graph Phase 2.0: Advanced features~~ ✅ COMPLETED
+  - [x] Automatic REFERS_TO detection (markdown links) ✅
+  - [x] Multi-hop reasoning (1-3 hops) ✅
+  - [x] Reranking by edge type ✅
+  - [x] Graph visualization endpoint ✅
 - [ ] Graph Phase 3.0: Entities & Concepts
   - [ ] NER (Named Entity Recognition)
   - [ ] Concept nodes

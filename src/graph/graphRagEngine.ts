@@ -2,6 +2,7 @@ import { searchKnn, getSectionMeta } from '../db/vectorStore.js';
 import { loadDocument } from '../db/jsonStore.js';
 import { embed } from '../embeddings/index.js';
 import { expandGraph, type EdgeType, type ExpandedNode } from '../db/graphStore.js';
+import { rerankSources, rerankWithDiversity, type RerankerConfig, type RankedSource } from './reranker.js';
 
 /**
  * Configuration for graph-aware RAG queries
@@ -16,6 +17,9 @@ export interface GraphRagConfig {
     minWeight?: number;         // Minimum edge weight for SAME_TOPIC
   };
   includeContext?: boolean;     // Include parent/siblings in context (default: true)
+  rerank?: boolean;             // Whether to rerank results (default: true)
+  rerankConfig?: Partial<RerankerConfig>;  // Reranking configuration
+  maxPerDocument?: number;      // Max results per document for diversity (default: no limit)
 }
 
 /**
@@ -209,15 +213,46 @@ export async function graphRagQuery(
     }
   }
 
-  // Convert back to array and sort by score (lower is better for distance)
-  const rankedSources = Array.from(uniqueSources.values()).sort((a, b) => {
-    // Primary: hop distance (seeds first)
-    if (a.hopDistance !== b.hopDistance) {
-      return (a.hopDistance || 0) - (b.hopDistance || 0);
+  // Convert to array for reranking
+  let rankedSources: RagSource[];
+  
+  // Apply reranking if enabled (default: true)
+  if (config.rerank !== false) {
+    // Convert to format expected by reranker
+    const sourcesForRanking = Array.from(uniqueSources.values()).map(s => ({
+      nodeId: s.nodeId,
+      docId: s.docId,
+      score: s.score,
+      hopDistance: s.hopDistance,
+      edgeType: s.edgeType,
+      edgeWeight: s.edgeType === 'SAME_TOPIC' ? (1 - s.score) : undefined
+    }));
+    
+    // Apply reranking
+    let reranked = rerankSources(sourcesForRanking, config.rerankConfig);
+    
+    // Apply diversity filter if configured
+    if (config.maxPerDocument) {
+      reranked = rerankWithDiversity(reranked, config.maxPerDocument);
     }
-    // Secondary: score
-    return a.score - b.score;
-  });
+    
+    // Map back to RagSource with updated scores
+    rankedSources = reranked.map(r => {
+      const original = uniqueSources.get(r.nodeId)!;
+      return {
+        ...original,
+        score: r.finalScore // Use reranked score
+      };
+    });
+  } else {
+    // Legacy sorting (by hop distance, then score)
+    rankedSources = Array.from(uniqueSources.values()).sort((a, b) => {
+      if (a.hopDistance !== b.hopDistance) {
+        return (a.hopDistance || 0) - (b.hopDistance || 0);
+      }
+      return a.score - b.score;
+    });
+  }
 
   const answer = rankedSources.length > 0
     ? `Found ${rankedSources.length} relevant sections${config.expandGraph ? ' using graph expansion' : ''}. See sources for context.`
