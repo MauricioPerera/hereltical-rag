@@ -169,7 +169,7 @@ export async function detectLinksInDocument(
   const edges: Edge[] = [];
   
   // Walk the document tree
-  function processNode(node: any) {
+  async function processNode(node: any) {
     const content = (node.content || []).join('\n');
     const links = extractLinks(content, defaultConfig);
     
@@ -233,12 +233,12 @@ export async function detectLinksInDocument(
     
     // Process children
     for (const child of node.children || []) {
-      processNode(child);
+      await processNode(child);
     }
   }
   
   // Start from root
-  processNode(doc.root);
+  await processNode(doc.root);
   
   return edges;
 }

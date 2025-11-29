@@ -147,3 +147,19 @@ export async function getSiblings(docId: string, nodeId: string): Promise<Sectio
     }
     return siblings;
 }
+
+/**
+ * Get all documents in the database
+ */
+export async function getAllDocuments(): Promise<Document[]> {
+    const db = await getDb();
+    return db.data.documents;
+}
+
+/**
+ * Get all document IDs
+ */
+export async function getAllDocumentIds(): Promise<string[]> {
+    const db = await getDb();
+    return db.data.documents.map(d => d.docId);
+}
