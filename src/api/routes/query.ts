@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { answer } from '../../ragEngine.js';
+import { answer, queryWithGraph, type GraphRagConfig } from '../../ragEngine.js';
 import { searchKnn, SearchFilters } from '../../db/vectorStore.js';
 import { embed } from '../../embeddings.js';
+import { type EdgeType } from '../../db/graphStore.js';
 
 export const queryRouter = Router();
 
@@ -122,6 +123,76 @@ queryRouter.post('/search', async (req: Request, res: Response) => {
         console.error('Error performing search:', error);
         res.status(500).json({
             error: 'Failed to perform search',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+});
+
+/**
+ * POST /api/query/graph
+ * Perform semantic search with graph expansion
+ * 
+ * This endpoint implements hybrid RAG: vector search + graph traversal
+ * 
+ * Body:
+ * {
+ *   "query": "What is deep learning?",
+ *   "k": 3,
+ *   "graphConfig": {
+ *     "useGraph": true,
+ *     "maxHops": 2,
+ *     "maxGraphNodes": 10,
+ *     "edgeTypes": ["SAME_TOPIC", "PARENT_OF"],
+ *     "minEdgeWeight": 0.7,
+ *     "combineStrategy": "union"
+ *   }
+ * }
+ */
+queryRouter.post('/graph', async (req: Request, res: Response) => {
+    try {
+        const { query, k = 3, graphConfig } = req.body;
+        
+        if (!query || typeof query !== 'string') {
+            return res.status(400).json({
+                error: 'Validation error',
+                message: 'query is required and must be a string'
+            });
+        }
+        
+        // Validate graph config if provided
+        const config: Partial<GraphRagConfig> = graphConfig || {};
+        
+        // Call graph-aware RAG engine
+        const result = await queryWithGraph(query, k, config);
+        
+        // Format response
+        res.json({
+            query,
+            answer: result.answer,
+            sources: result.sources.map(source => ({
+                nodeId: source.nodeId,
+                docId: source.docId,
+                score: source.score,
+                context: source.context,
+                graph: {
+                    hop: source.graphHop,
+                    edgeType: source.edgeType,
+                    edgeWeight: source.edgeWeight
+                }
+            })),
+            metadata: {
+                resultsCount: result.sources.length,
+                seedCount: result.sources.filter(s => s.graphHop === 0 || s.graphHop === undefined).length,
+                graphCount: result.sources.filter(s => s.graphHop && s.graphHop > 0).length,
+                graphConfig: config,
+                timestamp: new Date().toISOString()
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error processing graph query:', error);
+        res.status(500).json({
+            error: 'Failed to process graph query',
             message: error instanceof Error ? error.message : 'Unknown error'
         });
     }

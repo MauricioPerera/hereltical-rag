@@ -4,11 +4,14 @@ This document tracks planned improvements and feature requests for the Hierarchi
 
 ## 🆕 Graph Evolution: From Hierarchy to Knowledge Graph
 
-**Status:** Phase 1.5 - In Progress ⚡
+**Status:** Phase 1.5 - COMPLETED ✅ | Phase 2.0 - Next 📋
 
-hereltical-rag is evolving from a pure hierarchical system to a **knowledge graph**. A tree is a special case of graph, so this is a natural evolution that adds powerful cross-document reasoning capabilities.
+hereltical-rag has evolved from a pure hierarchical system to a **knowledge graph** with **hybrid retrieval** (vector + graph). A tree is a special case of graph, and this evolution adds powerful cross-document reasoning capabilities.
 
-**See:** `docs/GRAPH_EVOLUTION.md` for complete design and architecture.
+**See:**
+- `docs/GRAPH_EVOLUTION.md` - Complete design and architecture
+- `docs/GRAPH_RAG.md` - Usage guide and API documentation
+- `examples/test-graph-rag.sh` - Interactive demo
 
 ### Evolution Phases
 
@@ -17,13 +20,16 @@ hereltical-rag is evolving from a pure hierarchical system to a **knowledge grap
 - Parent/child/sibling relationships
 - Context limited to single document tree
 
-**Phase 1.5** 🚧 Basic Graph (In Progress)
+**Phase 1.5** ✅ Basic Graph (COMPLETED)
 - [x] Edges table in SQLite
 - [x] Graph store API
 - [x] SAME_TOPIC detection (cross-document similarity)
 - [x] Graph expansion (BFS, multi-hop)
 - [x] Graph API endpoints
-- [ ] Graph-aware RAG engine
+- [x] Graph-aware RAG engine
+- [x] POST /api/query/graph endpoint
+- [x] Hybrid retrieval (vector + graph)
+- [x] Documentation and examples
 
 **Phase 2.0** 📋 Advanced Graph (Planned)
 - [ ] REFERS_TO detection (markdown links)

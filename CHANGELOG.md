@@ -3,6 +3,17 @@
 ## [Unreleased]
 
 ### Added
+- **Graph-Aware RAG Engine** ⭐ - Hybrid vector + graph retrieval (Phase 1.5 COMPLETE)
+  - New `queryWithGraph()` function in ragEngine
+  - Combines vector search seeds with graph expansion
+  - BFS traversal from seed nodes (1-3 hops)
+  - Configurable edge types and weights
+  - Smart scoring: vector distance for seeds, edge weight for graph nodes
+  - New endpoint `POST /api/query/graph` with rich response format
+  - Graph expansion metadata in results (hop, edgeType, edgeWeight)
+  - Demo script `examples/test-graph-rag.sh`
+  - Complete documentation in `docs/GRAPH_RAG.md`
+
 - **Graph Evolution (Phase 1.5)** 🎯 - Basic knowledge graph infrastructure
   - Added `edges` table in SQLite for explicit relationships
   - New `graphStore.ts` with full graph API:

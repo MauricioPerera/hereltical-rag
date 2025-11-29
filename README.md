@@ -141,6 +141,45 @@ npm run test:watch
 
 For detailed testing information, see [TESTING.md](TESTING.md).
 
+## Graph-Aware RAG 🎯 NEW!
+
+**hereltical-rag** now supports **graph-aware retrieval** - combining vector search with graph traversal for richer, cross-document context.
+
+### Quick Example
+
+```bash
+# Traditional query (vector only)
+curl -X POST http://localhost:3000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "neural networks", "k": 3}'
+# Returns: Top 3 similar sections
+
+# Graph-aware query (vector + graph)
+curl -X POST http://localhost:3000/api/query/graph \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "neural networks",
+    "k": 2,
+    "graphConfig": {
+      "useGraph": true,
+      "maxHops": 2,
+      "edgeTypes": ["SAME_TOPIC", "PARENT_OF"]
+    }
+  }'
+# Returns: 2 seeds + related nodes from other documents
+```
+
+**Benefits:**
+- ✅ Cross-document reasoning
+- ✅ Finds related content not lexically similar
+- ✅ Richer context with multiple perspectives
+- ✅ Automatic relationship detection via embedding similarity
+
+**Documentation:**
+- [Graph-Aware RAG Guide](docs/GRAPH_RAG.md) - Complete usage guide
+- [Graph Evolution](docs/GRAPH_EVOLUTION.md) - Architecture and design
+- [Test Script](examples/test-graph-rag.sh) - Interactive demo
+
 ## Architecture
 
 ### System Flow
