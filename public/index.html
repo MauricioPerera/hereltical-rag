@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hierarchical RAG - Knowledge Graph</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-tertiary: #1a1a24;
+      --accent-primary: #00ff88;
+      --accent-secondary: #00ccff;
+      --accent-purple: #a855f7;
+      --text-primary: #e4e4e7;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border-color: #27272a;
+      --error: #ef4444;
+      --success: #22c55e;
+      --warning: #f59e0b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(ellipse at 20% 0%, rgba(0, 255, 136, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(0, 204, 255, 0.08) 0%, transparent 50%);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .logo h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-secondary);
+      border-radius: 9999px;
+      font-size: 0.875rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      padding-right: 120px;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.1);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border: none;
+      border-radius: 8px;
+      color: var(--bg-primary);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .search-btn:hover {
+      transform: translateY(-50%) scale(1.02);
+      box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+    }
+
+    .search-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .options-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .option-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .option-toggle:hover {
+      border-color: var(--accent-primary);
+    }
+
+    .option-toggle.active {
+      border-color: var(--accent-primary);
+      background: rgba(0, 255, 136, 0.1);
+    }
+
+    .option-toggle input {
+      display: none;
+    }
+
+    .checkbox-custom {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-color);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .option-toggle.active .checkbox-custom {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    .checkbox-custom::after {
+      content: '✓';
+      color: var(--bg-primary);
+      font-size: 12px;
+      opacity: 0;
+    }
+
+    .option-toggle.active .checkbox-custom::after {
+      opacity: 1;
+    }
+
+    .results-container {
+      margin-top: 1.5rem;
+    }
+
+    .result-item {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      transition: all 0.2s;
+    }
+
+    .result-item:hover {
+      border-color: var(--accent-secondary);
+      transform: translateX(4px);
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .result-title {
+      font-weight: 600;
+      color: var(--accent-secondary);
+    }
+
+    .result-meta {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      padding: 0.25rem 0.5rem;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+    }
+
+    .tag.score {
+      background: rgba(0, 255, 136, 0.1);
+      color: var(--accent-primary);
+    }
+
+    .tag.hop {
+      background: rgba(168, 85, 247, 0.1);
+      color: var(--accent-purple);
+    }
+
+    .result-content {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-height: 150px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .result-content::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: linear-gradient(transparent, var(--bg-tertiary));
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .stat-card {
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.25rem;
+    }
+
+    .edge-list {
+      margin-top: 1rem;
+    }
+
+    .edge-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+    }
+
+    .edge-type {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+    }
+
+    .edge-type.same-topic { color: var(--accent-primary); }
+    .edge-type.refers-to { color: var(--accent-secondary); }
+    .edge-type.parent-of { color: var(--accent-purple); }
+    .edge-type.mentions { color: var(--warning); }
+
+    .edge-count {
+      font-weight: 600;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border-color);
+      border-top-color: var(--accent-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-tertiary);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+
+    .concepts-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .concept-tag {
+      padding: 0.375rem 0.75rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .concept-tag:hover {
+      border-color: var(--accent-primary);
+      background: rgba(0, 255, 136, 0.1);
+    }
+
+    .concept-tag.tech { border-left: 3px solid var(--accent-secondary); }
+    .concept-tag.concept { border-left: 3px solid var(--accent-purple); }
+    .concept-tag.code { border-left: 3px solid var(--warning); }
+
+    .error-message {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--error);
+      border-radius: 8px;
+      padding: 1rem;
+      color: var(--error);
+      margin-top: 1rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab:hover {
+      border-color: var(--accent-primary);
+    }
+
+    .tab.active {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: var(--bg-primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">🧠</div>
+        <div>
+          <h1>Hierarchical RAG</h1>
+          <p>Knowledge Graph Explorer</p>
+        </div>
+      </div>
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span id="status-text">Connecting...</span>
+      </div>
+    </header>
+
+    <div class="main-grid">
+      <main>
+        <!-- Search Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🔍 Semantic Search</h2>
+          </div>
+          
+          <div class="search-box">
+            <input 
+              type="text" 
+              class="search-input" 
+              id="search-input"
+              placeholder="Ask anything about your documents..."
+            >
+            <button class="search-btn" id="search-btn">Search</button>
+          </div>
+
+          <div class="options-row">
+            <label class="option-toggle active" id="toggle-graph">
+              <input type="checkbox" checked>
+              <span class="checkbox-custom"></span>
+              Use Graph
+            </label>
+            <label class="option-toggle active" id="toggle-rerank">
+              <input type="checkbox" checked>
+              <span class="checkbox-custom"></span>
+              Reranking
+            </label>
+            <label class="option-toggle" id="toggle-expand">
+              <input type="checkbox">
+              <span class="checkbox-custom"></span>
+              Deep Expansion (3 hops)
+            </label>
+          </div>
+
+          <div class="results-container" id="results-container">
+            <div class="empty-state">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              <p>Enter a query to search your knowledge base</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entity Extraction Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🧬 Entity Extraction (NER)</h2>
+          </div>
+          
+          <div class="search-box">
+            <input 
+              type="text" 
+              class="search-input" 
+              id="ner-input"
+              placeholder="Paste text to extract entities..."
+            >
+            <button class="search-btn" id="ner-btn">Extract</button>
+          </div>
+
+          <div class="concepts-list" id="entities-container"></div>
+        </div>
+      </main>
+
+      <aside>
+        <!-- Graph Stats Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📊 Graph Statistics</h2>
+            <button class="tab" onclick="loadStats()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">↻ Refresh</button>
+          </div>
+          
+          <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="stat-nodes">-</div>
+              <div class="stat-label">Nodes</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-edges">-</div>
+              <div class="stat-label">Edges</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-degree">-</div>
+              <div class="stat-label">Avg Degree</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-docs">-</div>
+              <div class="stat-label">Documents</div>
+            </div>
+          </div>
+
+          <div class="edge-list" id="edge-list"></div>
+        </div>
+
+        <!-- Recent Concepts Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🏷️ Top Concepts</h2>
+          </div>
+          
+          <div class="tabs">
+            <button class="tab active" data-tab="tech">Technologies</button>
+            <button class="tab" data-tab="concepts">Concepts</button>
+          </div>
+
+          <div class="tab-content active" id="tab-tech">
+            <div class="concepts-list" id="tech-list"></div>
+          </div>
+          <div class="tab-content" id="tab-concepts">
+            <div class="concepts-list" id="concepts-list"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';  // Same origin
+
+    // Toggle handlers
+    document.querySelectorAll('.option-toggle').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        toggle.classList.toggle('active');
+      });
+    });
+
+    // Tab handlers
+    document.querySelectorAll('.tabs .tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.dataset.tab;
+        
+        document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+      });
+    });
+
+    // Search
+    async function search() {
+      const query = document.getElementById('search-input').value.trim();
+      if (!query) return;
+
+      const useGraph = document.getElementById('toggle-graph').classList.contains('active');
+      const useRerank = document.getElementById('toggle-rerank').classList.contains('active');
+      const deepExpand = document.getElementById('toggle-expand').classList.contains('active');
+
+      const container = document.getElementById('results-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Searching...</div>';
+
+      try {
+        const endpoint = useGraph ? '/api/query/smart' : '/api/query/classic';
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            k: 5,
+            useGraph,
+            rerank: useRerank,
+            maxHops: deepExpand ? 3 : 2
+          })
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        renderResults(data);
+      } catch (error) {
+        container.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      }
+    }
+
+    function renderResults(data) {
+      const container = document.getElementById('results-container');
+      
+      if (!data.sources || data.sources.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No results found</p></div>';
+        return;
+      }
+
+      container.innerHTML = data.sources.map(source => `
+        <div class="result-item">
+          <div class="result-header">
+            <span class="result-title">${escapeHtml(source.nodeId || source.node_id)}</span>
+            <div class="result-meta">
+              ${source.score !== undefined ? `<span class="tag score">Score: ${(1 - source.score).toFixed(2)}</span>` : ''}
+              ${source.hopDistance !== undefined ? `<span class="tag hop">Hop: ${source.hopDistance}</span>` : ''}
+              ${source.edgeType ? `<span class="tag">${source.edgeType}</span>` : ''}
+            </div>
+          </div>
+          <div class="result-content">${escapeHtml(source.context || source.title || '')}</div>
+        </div>
+      `).join('');
+    }
+
+    // Entity extraction
+    async function extractEntities() {
+      const text = document.getElementById('ner-input').value.trim();
+      if (!text) return;
+
+      const container = document.getElementById('entities-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+      try {
+        const response = await fetch('/api/graph/extract-entities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        renderEntities(data);
+      } catch (error) {
+        container.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      }
+    }
+
+    function renderEntities(data) {
+      const container = document.getElementById('entities-container');
+      
+      if (!data.entities || data.entities.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted)">No entities found</p>';
+        return;
+      }
+
+      container.innerHTML = data.entities.map(e => {
+        const typeClass = e.type === 'TECHNOLOGY' ? 'tech' : 
+                         e.type === 'CONCEPT' ? 'concept' : 
+                         e.type === 'CODE_REFERENCE' ? 'code' : '';
+        return `<span class="concept-tag ${typeClass}" title="${e.type} (${e.frequency}x)">${escapeHtml(e.text)}</span>`;
+      }).join('');
+    }
+
+    // Load stats
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/graph/stats');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const stats = await response.json();
+        
+        document.getElementById('stat-nodes').textContent = stats.totalNodes || 0;
+        document.getElementById('stat-edges').textContent = stats.totalEdges || 0;
+        document.getElementById('stat-degree').textContent = stats.avgDegree || '0';
+        
+        // Render edge types
+        const edgeList = document.getElementById('edge-list');
+        if (stats.edgesByType && Object.keys(stats.edgesByType).length > 0) {
+          edgeList.innerHTML = Object.entries(stats.edgesByType).map(([type, count]) => `
+            <div class="edge-item">
+              <span class="edge-type ${type.toLowerCase().replace('_', '-')}">${type}</span>
+              <span class="edge-count">${count}</span>
+            </div>
+          `).join('');
+        } else {
+          edgeList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.875rem; text-align: center; padding: 1rem;">No edges yet</p>';
+        }
+
+        // Update status
+        document.getElementById('status-text').textContent = 'Connected';
+      } catch (error) {
+        document.getElementById('status-text').textContent = 'Offline';
+        console.error('Failed to load stats:', error);
+      }
+    }
+
+    // Load documents count
+    async function loadDocs() {
+      try {
+        const response = await fetch('/api/docs');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        document.getElementById('stat-docs').textContent = data.documents?.length || 0;
+      } catch (error) {
+        console.error('Failed to load docs:', error);
+      }
+    }
+
+    // Sample concepts for sidebar
+    function loadSampleConcepts() {
+      const techs = ['React', 'Python', 'Node.js', 'TypeScript', 'Docker', 'PostgreSQL', 'Redis'];
+      const concepts = ['Machine Learning', 'Neural Network', 'Embedding', 'RAG', 'Knowledge Graph'];
+      
+      document.getElementById('tech-list').innerHTML = techs.map(t => 
+        `<span class="concept-tag tech" onclick="searchConcept('${t}')">${t}</span>`
+      ).join('');
+      
+      document.getElementById('concepts-list').innerHTML = concepts.map(c => 
+        `<span class="concept-tag concept" onclick="searchConcept('${c}')">${c}</span>`
+      ).join('');
+    }
+
+    function searchConcept(concept) {
+      document.getElementById('search-input').value = concept;
+      search();
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Event listeners
+    document.getElementById('search-btn').addEventListener('click', search);
+    document.getElementById('search-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') search();
+    });
+
+    document.getElementById('ner-btn').addEventListener('click', extractEntities);
+    document.getElementById('ner-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') extractEntities();
+    });
+
+    // Initialize
+    loadStats();
+    loadDocs();
+    loadSampleConcepts();
+    
+    // Refresh stats every 30 seconds
+    setInterval(loadStats, 30000);
+  </script>
+</body>
+</html>
+

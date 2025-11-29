@@ -1,11 +1,16 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { config, validateConfig } from '../config.js';
 import { indexRouter } from './routes/index.js';
 import { queryRouter } from './routes/query.js';
 import { docsRouter } from './routes/docs.js';
 import { healthRouter } from './routes/health.js';
 import graphRouter from './routes/graph.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function createApp(): Express {
     const app = express();
@@ -14,6 +19,9 @@ export function createApp(): Express {
     app.use(cors());
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
+    
+    // Serve static files from public directory
+    app.use(express.static(path.join(__dirname, '../../public')));
 
     // Request logging
     app.use((req: Request, res: Response, next: NextFunction) => {
@@ -32,19 +40,26 @@ export function createApp(): Express {
     app.use('/api/docs', docsRouter);
     app.use('/api/graph', graphRouter);
 
-    // Root endpoint
+    // Root endpoint - serve UI or API info
     app.get('/', (req: Request, res: Response) => {
-        res.json({
-            name: 'Hierarchical RAG API',
-            version: '1.0.0',
-            endpoints: {
-                health: '/health',
-                index: '/api/index',
-                query: '/api/query',
-                docs: '/api/docs',
-                graph: '/api/graph'
-            }
-        });
+        // Check if request accepts HTML (browser)
+        if (req.accepts('html')) {
+            res.sendFile(path.join(__dirname, '../../public/index.html'));
+        } else {
+            res.json({
+                name: 'Hierarchical RAG API',
+                version: '2.0.0',
+                ui: '/',
+                endpoints: {
+                    health: '/health',
+                    index: '/api/index',
+                    query: '/api/query',
+                    querySmartGraph: '/api/query/smart',
+                    docs: '/api/docs',
+                    graph: '/api/graph'
+                }
+            });
+        }
     });
 
     // Error handling
@@ -84,18 +99,17 @@ export async function startServer(): Promise<void> {
         console.log('║          Hierarchical RAG API Server Started                  ║');
         console.log('╚════════════════════════════════════════════════════════════════╝\n');
         console.log(`🚀 Server running at http://${host}:${port}`);
+        console.log(`🌐 Web UI: http://${host}:${port}/`);
         console.log(`📊 Embedding service: ${config.embeddingService}`);
         console.log(`💾 Vector DB: ${config.db.vectorPath}`);
         console.log(`📄 JSON Store: ${config.db.jsonPath}`);
-        console.log('\n📚 Available endpoints:');
-        console.log(`   - GET  http://${host}:${port}/health`);
-        console.log(`   - POST http://${host}:${port}/api/index`);
-        console.log(`   - POST http://${host}:${port}/api/query`);
-        console.log(`   - POST http://${host}:${port}/api/query/smart ⭐ (graph-aware RAG)`);
-        console.log(`   - POST http://${host}:${port}/api/query/classic (baseline)`);
-        console.log(`   - GET  http://${host}:${port}/api/docs/:docId`);
-        console.log(`   - GET  http://${host}:${port}/api/graph/stats`);
-        console.log(`   - POST http://${host}:${port}/api/graph/build/same-topic`);
+        console.log('\n📚 API Endpoints:');
+        console.log(`   - GET  /health`);
+        console.log(`   - POST /api/query/smart ⭐ (graph-aware RAG)`);
+        console.log(`   - POST /api/query/classic (baseline)`);
+        console.log(`   - POST /api/graph/extract-entities (NER)`);
+        console.log(`   - GET  /api/graph/stats`);
+        console.log(`   - GET  /api/docs`);
         console.log('\n Press Ctrl+C to stop\n');
     });
 }
