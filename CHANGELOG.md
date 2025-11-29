@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Ollama Integration** 🎉 - Local AI embeddings support
+  - New embedding service: `ollama`
+  - Support for local embedding models (nomic-embed-text, mxbai-embed-large, all-minilm)
+  - Privacy-preserving, offline embeddings
+  - No API costs
+  - Configuration via `OLLAMA_URL` and `OLLAMA_EMBEDDING_MODEL`
+  - Comprehensive Ollama documentation in `docs/OLLAMA.md`
+  - Helper functions: `checkOllamaAvailability()`, `listOllamaModels()`
+
+### Changed
+- Updated `EMBEDDING_SERVICE` config to support 'mock' | 'openai' | 'ollama'
+- Enhanced embedding service info to include model dimensions and URL
+- Updated Quick Start guide with Ollama option
+- Updated README with three embedding service options
+
 ## Version 2.0.0 - Major Feature Release
 
 ### ✨ New Features

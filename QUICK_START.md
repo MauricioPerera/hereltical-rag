@@ -98,7 +98,57 @@ Response:
 }
 ```
 
-## Option 2: Production Setup with OpenAI
+## Option 2: Local AI with Ollama (NEW! 🎉)
+
+### Step 1: Install Ollama
+
+```bash
+# macOS/Linux
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Windows: Download from https://ollama.ai/download
+```
+
+### Step 2: Pull an Embedding Model
+
+```bash
+# Start Ollama server
+ollama serve
+
+# In another terminal, pull the model
+ollama pull nomic-embed-text
+```
+
+### Step 3: Configure Environment
+
+```bash
+cat > .env << 'EOF'
+# Ollama Configuration
+EMBEDDING_SERVICE=ollama
+OLLAMA_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+EOF
+```
+
+### Step 4: Index and Query
+
+```bash
+# Index documents
+npx tsx src/cli/indexFile.ts --dir ./docs
+
+# Start server
+npm run server
+```
+
+**Benefits:**
+- ✅ 100% local, privacy-preserving
+- ✅ No API costs
+- ✅ Works offline
+- ✅ Fast embeddings
+
+See [docs/OLLAMA.md](docs/OLLAMA.md) for detailed guide.
+
+## Option 3: Production Setup with OpenAI
 
 ### Step 1: Get an OpenAI API Key
 

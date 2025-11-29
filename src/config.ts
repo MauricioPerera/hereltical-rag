@@ -10,8 +10,14 @@ export interface Config {
         embeddingModel: string;
     };
     
+    // Ollama Configuration
+    ollama: {
+        url: string;
+        embeddingModel: string;
+    };
+    
     // Embedding Service
-    embeddingService: 'mock' | 'openai';
+    embeddingService: 'mock' | 'openai' | 'ollama';
     
     // API Configuration
     api: {
@@ -32,7 +38,12 @@ export const config: Config = {
         embeddingModel: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small'
     },
     
-    embeddingService: (process.env.EMBEDDING_SERVICE as 'mock' | 'openai') || 'mock',
+    ollama: {
+        url: process.env.OLLAMA_URL || 'http://localhost:11434',
+        embeddingModel: process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text'
+    },
+    
+    embeddingService: (process.env.EMBEDDING_SERVICE as 'mock' | 'openai' | 'ollama') || 'mock',
     
     api: {
         port: parseInt(process.env.API_PORT || '3000', 10),
@@ -52,6 +63,15 @@ export function validateConfig(): { valid: boolean; errors: string[] } {
     if (config.embeddingService === 'openai') {
         if (!config.openai.apiKey) {
             errors.push('OPENAI_API_KEY is required when using OpenAI embeddings');
+        }
+    }
+    
+    if (config.embeddingService === 'ollama') {
+        if (!config.ollama.url) {
+            errors.push('OLLAMA_URL is required when using Ollama embeddings');
+        }
+        if (!config.ollama.embeddingModel) {
+            errors.push('OLLAMA_EMBEDDING_MODEL is required when using Ollama embeddings');
         }
     }
     

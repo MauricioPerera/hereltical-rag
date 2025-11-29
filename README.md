@@ -9,10 +9,14 @@ This project demonstrates how to build a RAG system that understands document st
 -   **Hybrid Storage**:
     -   **Structure**: `lowdb` (JSON) stores the full document tree, preserving hierarchy.
     -   **Embeddings**: `SQLite` + `sqlite-vec` stores vector embeddings for fast similarity search.
+-   **Multiple Embedding Services**:
+    -   **Mock**: Deterministic embeddings for testing (no setup required)
+    -   **OpenAI**: High-quality cloud embeddings with batch processing
+    -   **Ollama** 🎉: Local AI embeddings for privacy and zero costs
 -   **Hierarchical Context**: Retrieves not just the matching node, but its **Parent** (for broad context) and **Siblings** (for adjacent details).
 -   **Multi-Level Search**: Supports filtering by document level (e.g., find a "Topic" first, then search for "Details" within it).
 -   **Efficient Sync**: Implements change detection (hashing) to only re-embed modified sections, handling updates and deletions gracefully.
--   **Local & Fast**: Runs entirely locally without external vector DB dependencies.
+-   **Local & Fast**: Runs entirely locally without external vector DB dependencies (especially with Ollama).
 
 ## Requirements
 
@@ -228,35 +232,79 @@ For detailed testing information, see [TESTING.md](TESTING.md).
 
 ### Using Real Embeddings
 
-The system currently uses **deterministic mock embeddings** for testing and development (no API key required). To use **real OpenAI embeddings** in production:
+The system supports **three embedding services**:
 
-1. **Set your API key:**
-   ```bash
-   echo "OPENAI_API_KEY=sk-your-key-here" > .env
-   echo "EMBEDDING_SERVICE=openai" >> .env
-   ```
+#### 1. Mock Embeddings (Default)
+**Deterministic embeddings** for testing and development (no setup required).
 
-2. **The system automatically switches** to OpenAI's `text-embedding-3-small` model (1536 dimensions).
-
-3. **Configuration options** (`.env`):
-   ```env
-   OPENAI_API_KEY=sk-...              # Your OpenAI API key
-   EMBEDDING_SERVICE=openai           # 'mock' or 'openai'
-   OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # Model to use
-   ```
-
-**For local models** (e.g., sentence-transformers), implement a new service in `src/embeddings/` following the same interface:
-
-```typescript
-// src/embeddings/localEmbeddings.ts
-export async function generateLocalEmbedding(text: string): Promise<number[]> {
-  // Your local model implementation
-  // Must return array of 1536 numbers (or configure different dimension)
-  return embeddings;
-}
+```bash
+EMBEDDING_SERVICE=mock
 ```
 
-Then update `src/embeddings/index.ts` to add your service option.
+#### 2. OpenAI Embeddings
+**Cloud-based** embeddings with high quality.
+
+```bash
+echo "OPENAI_API_KEY=sk-your-key-here" > .env
+echo "EMBEDDING_SERVICE=openai" >> .env
+echo "OPENAI_EMBEDDING_MODEL=text-embedding-3-small" >> .env
+```
+
+**Features:**
+- High quality embeddings
+- 1536 dimensions
+- Batch processing support
+- Requires API key (costs apply)
+
+#### 3. Ollama Embeddings (NEW! 🎉)
+**Local** embeddings running on your machine.
+
+**Setup:**
+```bash
+# 1. Install Ollama (https://ollama.ai)
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# 2. Pull an embedding model
+ollama pull nomic-embed-text
+
+# 3. Configure your project
+echo "EMBEDDING_SERVICE=ollama" > .env
+echo "OLLAMA_EMBEDDING_MODEL=nomic-embed-text" >> .env
+echo "OLLAMA_URL=http://localhost:11434" >> .env
+```
+
+**Supported Models:**
+- `nomic-embed-text` (768 dimensions) - Recommended
+- `mxbai-embed-large` (1024 dimensions) - High quality
+- `all-minilm` (384 dimensions) - Fast and lightweight
+
+**Features:**
+- 100% local, no API costs
+- Privacy-preserving (data stays on your machine)
+- No internet required
+- Customizable models
+
+**Configuration options** (`.env`):
+```env
+# Choose your service
+EMBEDDING_SERVICE=mock|openai|ollama
+
+# OpenAI (if using)
+OPENAI_API_KEY=sk-...
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+
+# Ollama (if using)
+OLLAMA_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+
+# API Settings
+API_PORT=3000
+API_HOST=localhost
+
+# Database Paths
+DB_PATH=rag.db
+JSON_PATH=documents.json
+```
 
 ### Data Model
 

@@ -162,6 +162,7 @@ POST /api/query/hybrid
 **✅ Currently Supported:**
 - [x] **Markdown files**: Full H1/H2/H3 hierarchy parsing
 - [x] **Directory indexing**: Batch process multiple markdown files
+- [x] **Local AI models**: Ollama integration for embeddings
 
 **⏳ Pending:**
 - [ ] **PDF parsing**: Extract text and structure from PDFs
