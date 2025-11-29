@@ -4,15 +4,47 @@ This document tracks planned improvements and feature requests for the Hierarchi
 
 ## Current Status: v2.0.0 ✅
 
+### Fully Implemented Features
+
+**Core System:**
 - [x] Hierarchical document storage (lowdb)
 - [x] Vector embeddings (SQLite + sqlite-vec)
 - [x] Mock embeddings (deterministic, for testing)
-- [x] OpenAI embeddings integration
-- [x] REST API (10 endpoints)
-- [x] CLI tools for indexing
-- [x] Change detection and incremental sync
-- [x] Comprehensive documentation
-- [x] 100% test coverage of core features
+- [x] OpenAI embeddings integration with batch processing
+- [x] Change detection and incremental sync (SHA-256 hashing)
+- [x] Markdown parser (H1/H2/H3 hierarchy)
+
+**API & Tools:**
+- [x] REST API (10 endpoints: health, docs, index, query)
+- [x] CLI tools for indexing files and directories
+- [x] Configuration system (environment variables, validation)
+- [x] Error handling and logging
+
+**Quality & Documentation:**
+- [x] 32 unit tests with 100% pass rate
+- [x] TypeScript strict mode, no errors
+- [x] 11 comprehensive documentation files
+- [x] Code examples and quick start guide
+- [x] System architecture diagrams
+
+### What's NOT Yet Implemented
+
+**High Priority (Needed for Production):**
+- [ ] Authentication & authorization
+- [ ] Rate limiting
+- [ ] Query caching
+- [ ] Monitoring dashboard
+
+**Medium Priority (Quality Improvements):**
+- [ ] Hybrid search (vector + keyword)
+- [ ] Web UI
+- [ ] LLM integration for answer generation
+- [ ] Advanced markdown parsing (H4+, tables, code blocks)
+
+**Low Priority (Nice to Have):**
+- [ ] PDF/HTML parsing
+- [ ] Multi-language support
+- [ ] Advanced RAG techniques
 
 ---
 
@@ -20,9 +52,16 @@ This document tracks planned improvements and feature requests for the Hierarchi
 
 ### 1. Enhanced Markdown Parsing 🔄
 **Priority:** Medium  
-**Status:** Planned
+**Status:** Partially Implemented
 
-- [ ] Support H4, H5, H6 headings (currently limited to H1-H3)
+**✅ Currently Supported:**
+- [x] H1, H2, H3 hierarchy parsing
+- [x] Paragraph extraction
+- [x] Basic document structure
+- [x] Title detection
+
+**⏳ Pending:**
+- [ ] Support H4, H5, H6 headings
 - [ ] Parse code blocks with language detection
 - [ ] Handle tables and preserve structure
 - [ ] Parse ordered/unordered lists with nesting
@@ -73,9 +112,14 @@ POST /api/query/hybrid
 
 ### 4. Performance Optimizations ⚡
 **Priority:** High  
-**Status:** Planned
+**Status:** Partially Implemented
 
-- [ ] **Batch embedding generation**: Process multiple texts in parallel
+**✅ Currently Implemented:**
+- [x] **Batch embedding generation**: OpenAI batch processing support (`embedBatch()`)
+- [x] **Change detection**: Only re-embeds modified sections (SHA-256 hashing)
+- [x] **Efficient sync**: Skips unchanged nodes
+
+**⏳ Pending:**
 - [ ] **Query caching**: Cache frequent queries (Redis integration)
 - [ ] **Lazy loading**: Stream results for large result sets
 - [ ] **Index optimization**: SQLite vacuum and optimize
@@ -94,21 +138,32 @@ POST /api/query/hybrid
 
 ### 5. Advanced Document Management 📚
 **Priority:** Medium  
-**Status:** Planned
+**Status:** Partially Implemented
 
-- [ ] **Document versioning**: Track changes over time
+**✅ Currently Implemented:**
+- [x] **Basic versioning**: Document has `version` field
+- [x] **Update detection**: Hash-based change detection
+- [x] **Node deletion**: Clean removal from both stores
+
+**⏳ Pending:**
+- [ ] **Full version history**: Track all changes over time
 - [ ] **Rollback capability**: Revert to previous versions
 - [ ] **Diff visualization**: Show what changed between versions
 - [ ] **Merge conflicts**: Handle concurrent edits
 - [ ] **Soft delete**: Archive instead of permanent deletion
-- [ ] **Bulk operations**: Batch index/delete/update
+- [ ] **Bulk operations**: Batch index/delete/update via API
 
 ---
 
 ### 6. Multi-Format Support 📄
 **Priority:** Low  
-**Status:** Ideas
+**Status:** Partially Implemented
 
+**✅ Currently Supported:**
+- [x] **Markdown files**: Full H1/H2/H3 hierarchy parsing
+- [x] **Directory indexing**: Batch process multiple markdown files
+
+**⏳ Pending:**
 - [ ] **PDF parsing**: Extract text and structure from PDFs
 - [ ] **HTML parsing**: Convert web pages to hierarchy
 - [ ] **Word documents**: Support .docx files
@@ -119,13 +174,19 @@ POST /api/query/hybrid
 
 ### 7. Monitoring & Analytics 📈
 **Priority:** Medium  
-**Status:** Planned
+**Status:** Basic Implementation
 
+**✅ Currently Implemented:**
+- [x] **Request logging**: Basic request/response logging in API
+- [x] **Health endpoint**: `/health` with system status
+- [x] **Error handling**: Centralized error handling in API
+
+**⏳ Pending:**
 - [ ] **Query analytics**: Track popular queries
 - [ ] **Performance metrics**: Latency, throughput, error rates
 - [ ] **Usage tracking**: Documents indexed, queries per day
 - [ ] **Cost tracking**: OpenAI API usage and costs
-- [ ] **Health dashboard**: Real-time system status
+- [ ] **Health dashboard**: Real-time system status UI
 - [ ] **Alerts**: Notify on errors or performance degradation
 
 **Tools to Consider:**
@@ -137,8 +198,14 @@ POST /api/query/hybrid
 
 ### 8. Authentication & Authorization 🔐
 **Priority:** High (for production)  
-**Status:** Planned
+**Status:** Not Implemented
 
+**✅ Current Security:**
+- [x] **CORS enabled**: Cross-origin resource sharing configured
+- [x] **Input validation**: Zod schema validation on API endpoints
+- [x] **Error handling**: Sanitized error messages
+
+**⏳ Pending (Required for Production):**
 - [ ] **API key authentication**: Secure API endpoints
 - [ ] **User management**: Multi-user support
 - [ ] **Role-based access**: Admin/user/readonly roles
@@ -152,6 +219,8 @@ POST /api/query/hybrid
 app.use('/api', requireAuth);
 app.use('/api/admin', requireRole('admin'));
 ```
+
+**Note:** Currently suitable for development/internal use only. Production deployment requires authentication.
 
 ---
 
@@ -223,22 +292,40 @@ Query → Retrieve Context → Build Prompt → LLM → Stream Response
 
 ### 13. Developer Experience 🛠️
 **Priority:** Medium  
-**Status:** Ongoing
+**Status:** Partially Implemented
 
-- [ ] **TypeScript SDK**: Client library for TypeScript/JavaScript
+**✅ Currently Available:**
+- [x] **TypeScript project**: Full TypeScript support with strict mode
+- [x] **REST API**: Well-documented HTTP API (can be used from any language)
+- [x] **CLI tools**: Command-line utilities for indexing
+- [x] **Example documents**: Sample markdown files in `docs/`
+- [x] **Code examples**: In `examples/` directory
+- [x] **Comprehensive docs**: 11 documentation files
+
+**⏳ Pending:**
+- [ ] **TypeScript SDK**: Dedicated client library for TypeScript/JavaScript
 - [ ] **Python SDK**: Client library for Python
 - [ ] **Docker Compose**: One-command deployment
 - [ ] **Kubernetes manifests**: Production-ready K8s setup
-- [ ] **Example projects**: Showcase different use cases
 - [ ] **Video tutorials**: Getting started screencasts
+- [ ] **Interactive playground**: Web-based API testing
 
 ---
 
 ### 14. Testing & Quality 🧪
 **Priority:** High  
-**Status:** Ongoing
+**Status:** Well Established
 
-- [ ] **Integration tests**: Full end-to-end workflows
+**✅ Currently Implemented:**
+- [x] **Unit tests**: 32 tests covering all core modules (100% passing)
+- [x] **Test framework**: Vitest with TypeScript support
+- [x] **Test isolation**: Clean setup/teardown for each test
+- [x] **Mock data**: Deterministic mock embeddings for testing
+- [x] **CI-ready**: Fast test execution (~10s)
+- [x] **Type safety**: TypeScript strict mode, no errors
+
+**⏳ Pending:**
+- [ ] **Integration tests**: Full end-to-end API workflows
 - [ ] **Load testing**: Performance under load (k6, Artillery)
 - [ ] **Chaos testing**: Resilience to failures
 - [ ] **Security testing**: Penetration testing, vulnerability scans
@@ -249,12 +336,26 @@ Query → Retrieve Context → Build Prompt → LLM → Stream Response
 
 ### 15. Documentation Improvements 📖
 **Priority:** Medium  
-**Status:** Ongoing
+**Status:** Excellent Foundation
 
+**✅ Currently Available:**
+- [x] **Comprehensive README**: Complete project overview with examples
+- [x] **Quick Start guide**: 5-minute getting started
+- [x] **Testing documentation**: Full testing guide with results
+- [x] **Deployment guide**: Production deployment instructions
+- [x] **API documentation**: All endpoints documented with examples
+- [x] **Changelog**: Version history and changes
+- [x] **Roadmap**: This document with feature planning
+- [x] **Contributing guide**: How to contribute to the project
+- [x] **Code examples**: Multiple working examples
+- [x] **System diagrams**: Architecture flow diagrams
+- [x] **Validation report**: Technical validation details
+
+**⏳ Pending:**
 - [ ] **Interactive tutorials**: Step-by-step guided tours
 - [ ] **Video walkthroughs**: YouTube channel
 - [ ] **Architecture decision records (ADRs)**: Document key decisions
-- [ ] **API playground**: Interactive API testing (like Swagger)
+- [ ] **API playground**: Interactive API testing (like Swagger UI)
 - [ ] **Community examples**: User-contributed use cases
 - [ ] **Translated docs**: Spanish, Chinese, Japanese, etc.
 
@@ -306,29 +407,41 @@ Query → Retrieve Context → Build Prompt → LLM → Stream Response
 
 ## Timeline (Tentative)
 
-### Q1 2025
-- [ ] Hybrid search implementation
-- [ ] Authentication & authorization
-- [ ] Performance optimizations
-- [ ] Basic monitoring
+### ✅ Completed (2024)
+- [x] ~~Core RAG system~~ (v1.0.0)
+- [x] ~~OpenAI integration~~ (v2.0.0)
+- [x] ~~REST API~~ (v2.0.0)
+- [x] ~~CLI tools~~ (v2.0.0)
+- [x] ~~Comprehensive documentation~~ (v2.0.0)
+- [x] ~~Markdown parser~~ (v2.0.0)
 
-### Q2 2025
-- [ ] LLM integration (OpenAI)
+### Q1 2025 (High Priority)
+- [ ] Authentication & authorization ⚠️ **Required for production**
+- [ ] Rate limiting
+- [ ] Hybrid search implementation
+- [ ] Query caching (Redis)
+- [ ] Performance monitoring
+
+### Q2 2025 (Feature Expansion)
+- [ ] LLM integration (OpenAI/Ollama)
 - [ ] Web UI (MVP)
 - [ ] Advanced document management
-- [ ] Docker & K8s deployment
+- [ ] Docker Compose setup
+- [ ] Integration tests
 
-### Q3 2025
+### Q3 2025 (Enhancement)
 - [ ] Multi-format support (PDF, HTML)
 - [ ] Analytics dashboard
 - [ ] Python SDK
 - [ ] Load testing & optimization
+- [ ] Advanced markdown parsing
 
-### Q4 2025
-- [ ] Advanced RAG techniques
+### Q4 2025 (Advanced Features)
+- [ ] Advanced RAG techniques (HyDE, multi-hop)
+- [ ] Kubernetes manifests
 - [ ] Multi-language support
-- [ ] Community features
-- [ ] Documentation overhaul
+- [ ] Video tutorials
+- [ ] Community showcase
 
 ---
 
