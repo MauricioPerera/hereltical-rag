@@ -37,11 +37,11 @@ hereltical-rag has evolved from a pure hierarchical system to a **knowledge grap
 - [x] Graph visualization ✅
 - [x] Multi-hop reasoning (1-3 hops with decay) ✅
 
-**Phase 3.0** 🔮 Entities & Concepts (Future)
-- [ ] Named Entity Recognition
-- [ ] Concept extraction
-- [ ] MENTIONS, DEFINES edges
-- [ ] Graph embeddings
+**Phase 3.0** 🚧 Entities & Concepts (In Progress - 75%)
+- [x] Named Entity Recognition (NER) ✅
+- [x] Concept extraction ✅
+- [x] MENTIONS/DEFINES edges ✅
+- [ ] Graph embeddings (future)
 
 ---
 

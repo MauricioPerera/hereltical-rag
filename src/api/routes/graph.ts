@@ -11,6 +11,8 @@ import {
 import { buildSameTopicGraph, type SameTopicConfig } from '../../graph/relationsDetector.js';
 import { detectLinksInAllDocuments, getLinkStatistics, type LinkDetectionConfig } from '../../graph/linkDetector.js';
 import { exportGraph, exportSubgraph, exportGraphFormat, type GraphExportConfig } from '../../graph/graphVisualizer.js';
+import { extractEntities } from '../../graph/entityExtractor.js';
+import { buildConceptGraph, persistConceptGraph, getConceptStats } from '../../graph/conceptGraph.js';
 
 const router = Router();
 
@@ -286,6 +288,123 @@ router.post('/subgraph', async (req, res) => {
       });
       res.json(formatted);
     }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/graph/extract-entities
+ * Extract entities from text (NER)
+ */
+router.post('/extract-entities', (req, res) => {
+  try {
+    const { text } = req.body;
+    
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'text is required' });
+    }
+    
+    const result = extractEntities(text);
+    
+    res.json({
+      entities: result.entities,
+      concepts: result.concepts,
+      technologies: result.technologies,
+      stats: result.stats
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/graph/concepts/:docId
+ * Get concept statistics for a document
+ */
+router.get('/concepts/:docId', async (req, res) => {
+  try {
+    const { docId } = req.params;
+    const stats = await getConceptStats(docId);
+    
+    res.json({
+      docId,
+      ...stats
+    });
+  } catch (error: any) {
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/graph/build/concepts
+ * Build and persist concept graph for a document
+ */
+router.post('/build/concepts', async (req, res) => {
+  try {
+    const { docId } = req.body;
+    
+    if (!docId) {
+      return res.status(400).json({ error: 'docId is required' });
+    }
+    
+    console.log(`🧠 Building concept graph for ${docId}...`);
+    const result = await persistConceptGraph(docId);
+    console.log(`   Created ${result.conceptsCreated} concepts, ${result.edgesCreated} edges`);
+    
+    res.json({
+      success: true,
+      docId,
+      ...result
+    });
+  } catch (error: any) {
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/graph/build/concepts-all
+ * Build concept graph for all specified documents
+ */
+router.post('/build/concepts-all', async (req, res) => {
+  try {
+    const { docIds } = req.body;
+    
+    if (!docIds || !Array.isArray(docIds)) {
+      return res.status(400).json({ error: 'docIds array is required' });
+    }
+    
+    console.log(`🧠 Building concept graph for ${docIds.length} documents...`);
+    
+    const results = [];
+    let totalConcepts = 0;
+    let totalEdges = 0;
+    
+    for (const docId of docIds) {
+      try {
+        const result = await persistConceptGraph(docId);
+        results.push({ docId, ...result, success: true });
+        totalConcepts += result.conceptsCreated;
+        totalEdges += result.edgesCreated;
+      } catch (error: any) {
+        results.push({ docId, success: false, error: error.message });
+      }
+    }
+    
+    console.log(`   Total: ${totalConcepts} concepts, ${totalEdges} edges`);
+    
+    res.json({
+      success: true,
+      totalConcepts,
+      totalEdges,
+      results
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

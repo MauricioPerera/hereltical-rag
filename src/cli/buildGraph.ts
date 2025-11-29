@@ -9,6 +9,7 @@ import { getGraphStats } from '../db/graphStore.js';
  * Usage:
  *   npx tsx src/cli/buildGraph.ts same-topic
  *   npx tsx src/cli/buildGraph.ts same-topic --min-similarity 0.85
+ *   npx tsx src/cli/buildGraph.ts concepts --doc <docId>
  *   npx tsx src/cli/buildGraph.ts stats
  */
 
@@ -21,7 +22,8 @@ async function main() {
     console.log('');
     console.log('Commands:');
     console.log('  same-topic       Build SAME_TOPIC edges based on embedding similarity');
-    console.log('  refers-to        Build REFERS_TO edges from markdown links ⭐ NEW');
+    console.log('  refers-to        Build REFERS_TO edges from markdown links');
+    console.log('  concepts         Build MENTIONS/DEFINES edges from entity extraction ⭐ NEW');
     console.log('  stats            Show graph statistics');
     console.log('');
     console.log('Options for same-topic:');
@@ -36,11 +38,15 @@ async function main() {
     console.log('  --no-markdown              Disable markdown link detection (default: enabled)');
     console.log('  --no-wiki                  Disable wiki link detection (default: enabled)');
     console.log('');
+    console.log('Options for concepts:');
+    console.log('  --doc <docId>              Process specific document');
+    console.log('  --all                      Process all indexed documents');
+    console.log('');
     console.log('Examples:');
     console.log('  npx tsx src/cli/buildGraph.ts same-topic');
     console.log('  npx tsx src/cli/buildGraph.ts same-topic --min-similarity 0.85');
     console.log('  npx tsx src/cli/buildGraph.ts refers-to');
-    console.log('  npx tsx src/cli/buildGraph.ts refers-to --cross-doc-only');
+    console.log('  npx tsx src/cli/buildGraph.ts concepts --doc my-document');
     console.log('  npx tsx src/cli/buildGraph.ts stats');
     process.exit(0);
   }
@@ -127,6 +133,82 @@ async function main() {
     console.log('💡 Next steps:');
     console.log('   - View stats: npx tsx src/cli/buildGraph.ts stats');
     console.log('   - Query with graph: POST /api/query/smart');
+    console.log('');
+
+    process.exit(0);
+  }
+
+  if (command === 'concepts') {
+    console.log('');
+    console.log('╔════════════════════════════════════════════════════════════════╗');
+    console.log('║         Building Concept Graph (NER + MENTIONS/DEFINES)        ║');
+    console.log('╚════════════════════════════════════════════════════════════════╝');
+    console.log('');
+
+    const { persistConceptGraph, getConceptStats } = await import('../graph/conceptGraph.js');
+    
+    // Parse options
+    let docId: string | undefined;
+    let processAll = false;
+
+    for (let i = 1; i < args.length; i++) {
+      const arg = args[i];
+      
+      if (arg === '--doc' && args[i + 1]) {
+        docId = args[i + 1];
+        i++;
+      } else if (arg === '--all') {
+        processAll = true;
+      }
+    }
+
+    if (!docId && !processAll) {
+      console.error('❌ Please specify --doc <docId> or --all');
+      process.exit(1);
+    }
+
+    if (docId) {
+      console.log(`📄 Processing document: ${docId}`);
+      console.log('');
+
+      try {
+        // First show concept stats
+        const stats = await getConceptStats(docId);
+        console.log('📊 Concept Statistics:');
+        console.log(`   Technologies: ${stats.summary.technologies}`);
+        console.log(`   Concepts: ${stats.summary.concepts}`);
+        console.log(`   Code refs: ${stats.summary.codeRefs}`);
+        console.log(`   Acronyms: ${stats.summary.acronyms}`);
+        console.log('');
+
+        // Show top concepts
+        const topConcepts = stats.concepts.slice(0, 10);
+        if (topConcepts.length > 0) {
+          console.log('🔝 Top Concepts:');
+          for (const c of topConcepts) {
+            console.log(`   ${c.name} (${c.type}) - ${c.frequency}x`);
+          }
+          console.log('');
+        }
+
+        // Build and persist
+        console.log('🔨 Building graph edges...');
+        const result = await persistConceptGraph(docId);
+        
+        console.log('');
+        console.log('✅ Complete!');
+        console.log(`   Concepts: ${result.conceptsCreated}`);
+        console.log(`   Edges: ${result.edgesCreated}`);
+      } catch (error: any) {
+        console.error(`❌ Error: ${error.message}`);
+        process.exit(1);
+      }
+    }
+
+    console.log('');
+    console.log('💡 Next steps:');
+    console.log('   - View stats: npx tsx src/cli/buildGraph.ts stats');
+    console.log('   - API: GET /api/graph/concepts/:docId');
     console.log('');
 
     process.exit(0);
