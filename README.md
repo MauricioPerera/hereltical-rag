@@ -8,7 +8,7 @@ This project demonstrates how to build an advanced RAG system that combines:
 - **Hybrid retrieval** (vector search + graph traversal)
 - **Multi-hop reasoning** for richer context discovery
 
-🎯 **Phase 1.5 Complete:** Full knowledge graph infrastructure with graph-aware RAG engine!
+🎯 **Phase 2.0 Complete:** Advanced graph features with reranking, visualization, and REFERS_TO detection!
 
 ## Features
 
@@ -177,7 +177,7 @@ npm run test:watch
 
 For detailed testing information, see [TESTING.md](TESTING.md).
 
-## Graph-Aware RAG 🎯 Phase 1.5 COMPLETE!
+## Graph-Aware RAG 🎯 Phase 2.0 COMPLETE!
 
 **hereltical-rag** now features a **full knowledge graph** with hybrid RAG that combines vector search with graph traversal for richer, cross-document context.
 
@@ -233,10 +233,11 @@ curl -X POST http://localhost:3000/api/query/classic \
 ### Graph Features
 
 - ✅ **6 Edge Types**: SAME_TOPIC, PARENT_OF, CHILD_OF, NEXT_SIBLING, PREV_SIBLING, REFERS_TO
-- ✅ **Auto-Detection**: SAME_TOPIC via embedding similarity (configurable threshold)
-- ✅ **BFS Expansion**: Multi-hop traversal (1-3 hops)
+- ✅ **Auto-Detection**: SAME_TOPIC via embedding similarity + REFERS_TO from markdown links
+- ✅ **BFS Expansion**: Multi-hop traversal (1-3 hops) with configurable decay
 - ✅ **Cross-Document**: Discover related content across multiple documents
-- ✅ **Smart Deduplication**: Handles multiple paths to same nodes
+- ✅ **Smart Reranking**: Score by edge type, hop distance, and vector similarity
+- ✅ **Graph Visualization**: Export to D3.js, Cytoscape, Vis.js, GraphML
 - ✅ **Path Tracking**: See how each node was reached
 
 ### Benefits
@@ -883,18 +884,21 @@ See [docs/MATRYOSHKA.md](docs/MATRYOSHKA.md) for complete guide and trade-offs.
 
 See [ROADMAP.md](ROADMAP.md) for detailed feature plans and timeline.
 
-### Recently Completed ✅ (Phase 1.5)
+### Recently Completed ✅ (Phase 2.0)
 
-1.  ✅ **Knowledge Graph Infrastructure** - Edges table, graph store API, BFS expansion
-2.  ✅ **Graph-Aware RAG Engine** - Hybrid vector + graph retrieval, multi-hop reasoning
-3.  ✅ **SAME_TOPIC Auto-Detection** - Embedding similarity-based edge creation
-4.  ✅ **Matryoshka Embeddings** - 50-75% storage reduction, 2-6x speed improvement
-5.  ✅ **Ollama Integration** - Local AI embeddings (nomic-embed-text, embeddinggemma)
-6.  ✅ **embeddinggemma Validation** - Tested and validated Google's embedding model
-7.  ✅ **Graph API Endpoints** - 8 new endpoints for graph operations
-8.  ✅ **CLI Graph Tools** - buildGraph.ts for graph management
-9.  ✅ **Comprehensive Testing** - 60 tests (100% passing)
-10. ✅ **Complete Documentation** - 18 docs including API reference, design docs
+**Phase 2.0 - Advanced Graph:**
+1.  ✅ **REFERS_TO Detection** - Automatic edge creation from markdown/wiki links
+2.  ✅ **Graph Visualization** - Export to D3.js, Cytoscape, Vis.js, GraphML
+3.  ✅ **Edge-Based Reranking** - Smart scoring by edge type, hop distance, similarity
+4.  ✅ **Multi-hop Reasoning** - 1-3 hops with configurable decay factor
+
+**Phase 1.5 - Knowledge Graph:**
+5.  ✅ **Knowledge Graph Infrastructure** - Edges table, graph store API, BFS expansion
+6.  ✅ **Graph-Aware RAG Engine** - Hybrid vector + graph retrieval
+7.  ✅ **SAME_TOPIC Auto-Detection** - Embedding similarity-based edge creation
+8.  ✅ **Matryoshka Embeddings** - 50-75% storage reduction, 2-6x speed improvement
+9.  ✅ **Ollama Integration** - Local AI embeddings (embeddinggemma validated)
+10. ✅ **Graph API Endpoints** - 12+ endpoints for graph operations
 
 ### High Priority (Phase 2.0 - Next Quarter)
 
