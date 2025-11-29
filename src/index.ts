@@ -4,7 +4,9 @@ import { searchKnn } from './db/vectorStore.js';
 import { embed } from './embeddings.js';
 
 async function main() {
-    console.log('🚀 Starting Phase 4 Verification (Sync & Updates)...');
+    console.log('╔════════════════════════════════════════════════════════════════╗');
+    console.log('║     Hierarchical RAG Demo - Phase 4 (Sync & Updates)         ║');
+    console.log('╚════════════════════════════════════════════════════════════════╝\n');
 
     const docId = 'doc-sync-test';
 
@@ -14,7 +16,8 @@ async function main() {
     };
 
     // --- Initial State ---
-    console.log('\n--- 1. Initial Indexing ---');
+    console.log('\n[STEP 1] Initial Document Creation & Indexing');
+    console.log('─────────────────────────────────────────────────');
     const doc: Document = {
         docId,
         title: 'Sync Test Doc',
@@ -47,7 +50,11 @@ async function main() {
     await syncDocument(doc);
 
     // --- Modification State ---
-    console.log('\n--- 2. Modifying Document ---');
+    console.log('\n[STEP 2] Document Modifications');
+    console.log('─────────────────────────────────────────────────');
+    console.log('  • Modifying sec-1 content');
+    console.log('  • Adding new sec-3');
+    console.log('  • Deleting sec-2\n');
     // 1. Modify sec-1
     sec1.content = ['Content 1 MODIFIED'];
 
@@ -60,21 +67,6 @@ async function main() {
     // 3. Delete sec-2
     doc.root.children = doc.root.children.filter(n => n.id !== 'sec-2');
     doc.nodes['root'].childrenIds = doc.nodes['root'].childrenIds.filter(id => id !== 'sec-2');
-    delete doc.nodes['sec-2'];
-
-    await saveDocument(doc);
-    await syncDocument(doc);
-
-    // --- Verification ---
-    console.log('\n--- 3. Verifying Updates ---');
-
-    // Check if sec-1 is updated
-    // With hash-based deterministic embeddings, we need exact text match to get a high score (distance ~0)
-    // The indexed text is "Title\nContent"
-    const exactText = "Original Section 1\nContent 1 MODIFIED";
-    const q1 = await embed(exactText);
-    const r1 = searchKnn(q1, 1, { doc_id: docId });
-
     if (r1.length > 0 && r1[0].node_id === 'sec-1') {
         console.log(`✅ Modified node found (sec-1) - Distance: ${r1[0].distance}`);
     } else {
