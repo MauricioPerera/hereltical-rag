@@ -8,7 +8,7 @@ This project demonstrates how to build an advanced RAG system that combines:
 - **Hybrid retrieval** (vector search + graph traversal)
 - **Multi-hop reasoning** for richer context discovery
 
-🎯 **Phase 3.0 In Progress:** Entity extraction with NER, concept graphs, and MENTIONS/DEFINES edges!
+🎯 **Web UI Available!** Entity extraction, concept graphs, and visual Knowledge Graph Explorer!
 
 ## Features
 
@@ -186,12 +186,13 @@ For detailed testing information, see [TESTING.md](TESTING.md).
 ```bash
 # 1. Index some documents
 npx tsx src/cli/indexFile.ts docs/example.md ml-guide
-npx tsx src/cli/indexFile.ts docs/ai-history.md ai-history
 
-# 2. Build the knowledge graph (SAME_TOPIC edges)
+# 2. Build the knowledge graph
 npx tsx src/cli/buildGraph.ts same-topic
 
-# 3. Start the server
+# 3. Start the server & open Web UI
+npm run server
+# Open http://localhost:3000 in your browser!
 npm run server
 
 # 4. Try graph-aware RAG (recommended)
@@ -884,13 +885,19 @@ See [docs/MATRYOSHKA.md](docs/MATRYOSHKA.md) for complete guide and trade-offs.
 
 See [ROADMAP.md](ROADMAP.md) for detailed feature plans and timeline.
 
-### Recently Completed ✅ (Phase 3.0)
+### Recently Completed ✅
+
+**Web UI - Knowledge Graph Explorer:**
+1.  ✅ **Visual Interface** - Modern dark theme with search, NER, and stats
+2.  ✅ **Real-time Search** - Smart/Classic query toggle with graph options
+3.  ✅ **Entity Extraction UI** - Interactive NER with entity highlighting
+4.  ✅ **Graph Statistics** - Live stats and edge type breakdown
 
 **Phase 3.0 - Entities & Concepts:**
-1.  ✅ **Named Entity Recognition (NER)** - Extract technologies, concepts, code refs, acronyms
-2.  ✅ **Concept Extraction** - Pattern-based extraction (no ML dependencies)
-3.  ✅ **MENTIONS/DEFINES Edges** - Link sections to concepts they mention or define
-4.  ✅ **Concept Co-occurrence** - RELATED_TO edges between co-occurring concepts
+5.  ✅ **Named Entity Recognition (NER)** - Extract technologies, concepts, code refs, acronyms
+6.  ✅ **Concept Extraction** - Pattern-based extraction (no ML dependencies)
+7.  ✅ **MENTIONS/DEFINES Edges** - Link sections to concepts they mention or define
+8.  ✅ **Concept Co-occurrence** - RELATED_TO edges between co-occurring concepts
 
 **Phase 2.0 - Advanced Graph:**
 5.  ✅ **REFERS_TO Detection** - Automatic edge creation from markdown/wiki links
