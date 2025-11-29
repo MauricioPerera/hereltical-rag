@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Graph Viewer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .controls label {
+            margin-right: 15px;
+            font-weight: 500;
+        }
+        
+        .controls select, .controls input, .controls button {
+            padding: 8px 12px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .controls button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .controls button:hover {
+            background: #45a049;
+        }
+        
+        #graph {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .node {
+            cursor: pointer;
+        }
+        
+        .node circle {
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+        
+        .node.document circle {
+            fill: #4CAF50;
+        }
+        
+        .node.section circle {
+            fill: #2196F3;
+        }
+        
+        .node.selected circle {
+            stroke: #ff9800;
+            stroke-width: 3px;
+        }
+        
+        .node text {
+            font-size: 12px;
+            pointer-events: none;
+        }
+        
+        .link {
+            stroke-opacity: 0.6;
+            fill: none;
+        }
+        
+        .link.SAME_TOPIC {
+            stroke: #9C27B0;
+            stroke-width: 2px;
+        }
+        
+        .link.REFERS_TO {
+            stroke: #FF5722;
+            stroke-width: 1.5px;
+        }
+        
+        .link.PARENT_OF {
+            stroke: #607D8B;
+            stroke-width: 1px;
+        }
+        
+        .link.CHILD_OF {
+            stroke: #607D8B;
+            stroke-width: 1px;
+            stroke-dasharray: 3,3;
+        }
+        
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stats h3 {
+            margin-top: 0;
+        }
+        
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .legend h3 {
+            margin-top: 0;
+        }
+        
+        .legend-item {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #fff;
+        }
+        
+        .legend-line {
+            width: 30px;
+            height: 2px;
+            margin-right: 10px;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            pointer-events: none;
+            display: none;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Knowledge Graph Viewer</h1>
+        
+        <div class="controls">
+            <label>
+                Server:
+                <input type="text" id="serverUrl" value="http://localhost:3000" />
+            </label>
+            
+            <label>
+                Edge Types:
+                <select id="edgeTypes" multiple>
+                    <option value="SAME_TOPIC" selected>SAME_TOPIC</option>
+                    <option value="REFERS_TO" selected>REFERS_TO</option>
+                    <option value="PARENT_OF">PARENT_OF</option>
+                    <option value="CHILD_OF">CHILD_OF</option>
+                </select>
+            </label>
+            
+            <label>
+                Max Nodes:
+                <input type="number" id="maxNodes" value="100" min="10" max="1000" />
+            </label>
+            
+            <label>
+                Min Degree:
+                <input type="number" id="minDegree" value="1" min="0" max="10" />
+            </label>
+            
+            <button onclick="loadGraph()">Load Graph</button>
+            <button onclick="resetZoom()">Reset Zoom</button>
+        </div>
+        
+        <svg id="graph" width="1360" height="700"></svg>
+        
+        <div class="stats">
+            <h3>Graph Statistics</h3>
+            <div id="statsContent">Click "Load Graph" to view statistics</div>
+        </div>
+        
+        <div class="legend">
+            <h3>Legend</h3>
+            <div>
+                <strong>Nodes:</strong>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4CAF50;"></div>
+                    <span>Document</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2196F3;"></div>
+                    <span>Section</span>
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <strong>Edges:</strong>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #9C27B0;"></div>
+                    <span>SAME_TOPIC (semantic similarity)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #FF5722;"></div>
+                    <span>REFERS_TO (markdown links)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #607D8B;"></div>
+                    <span>PARENT_OF (hierarchy)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #607D8B; background-image: linear-gradient(to right, #607D8B 50%, transparent 50%); background-size: 6px 2px;"></div>
+                    <span>CHILD_OF (hierarchy)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        const svg = d3.select('#graph');
+        const width = 1360;
+        const height = 700;
+        
+        let simulation, link, node;
+        let transform = d3.zoomIdentity;
+        
+        // Zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on('zoom', (event) => {
+                transform = event.transform;
+                g.attr('transform', transform);
+            });
+        
+        svg.call(zoom);
+        
+        const g = svg.append('g');
+        
+        function resetZoom() {
+            svg.transition()
+                .duration(750)
+                .call(zoom.transform, d3.zoomIdentity);
+        }
+        
+        async function loadGraph() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const edgeTypes = Array.from(document.getElementById('edgeTypes').selectedOptions)
+                .map(opt => opt.value);
+            const maxNodes = document.getElementById('maxNodes').value;
+            const minDegree = document.getElementById('minDegree').value;
+            
+            try {
+                const params = new URLSearchParams({
+                    format: 'd3',
+                    edgeTypes: edgeTypes.join(','),
+                    maxNodes,
+                    minDegree
+                });
+                
+                const response = await fetch(`${serverUrl}/api/graph/export?${params}`);
+                const data = await response.json();
+                
+                renderGraph(data);
+                displayStats(data.stats);
+            } catch (error) {
+                alert('Error loading graph: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        function displayStats(stats) {
+            const content = `
+                <p><strong>Nodes:</strong> ${stats.nodeCount}</p>
+                <p><strong>Edges:</strong> ${stats.edgeCount}</p>
+                <p><strong>Edges by type:</strong></p>
+                <ul>
+                    ${Object.entries(stats.edgesByType)
+                        .map(([type, count]) => `<li>${type}: ${count}</li>`)
+                        .join('')}
+                </ul>
+            `;
+            document.getElementById('statsContent').innerHTML = content;
+        }
+        
+        function renderGraph(data) {
+            // Clear existing graph
+            g.selectAll('*').remove();
+            
+            // Create force simulation
+            simulation = d3.forceSimulation(data.nodes)
+                .force('link', d3.forceLink(data.links)
+                    .id(d => d.id)
+                    .distance(100))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(30));
+            
+            // Create links
+            link = g.append('g')
+                .selectAll('line')
+                .data(data.links)
+                .join('line')
+                .attr('class', d => `link ${d.type}`)
+                .attr('marker-end', 'url(#arrowhead)');
+            
+            // Create nodes
+            node = g.append('g')
+                .selectAll('g')
+                .data(data.nodes)
+                .join('g')
+                .attr('class', d => `node ${d.type}`)
+                .call(drag(simulation))
+                .on('click', nodeClick)
+                .on('mouseover', showTooltip)
+                .on('mouseout', hideTooltip);
+            
+            node.append('circle')
+                .attr('r', d => d.type === 'document' ? 12 : 8);
+            
+            node.append('text')
+                .attr('dx', 15)
+                .attr('dy', 4)
+                .text(d => d.label.length > 30 ? d.label.substring(0, 30) + '...' : d.label);
+            
+            // Add arrowhead marker
+            svg.append('defs').append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '-0 -5 10 10')
+                .attr('refX', 20)
+                .attr('refY', 0)
+                .attr('orient', 'auto')
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .append('svg:path')
+                .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
+                .attr('fill', '#999');
+            
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+        }
+        
+        function drag(simulation) {
+            function dragstarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
+            
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+            
+            function dragended(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+            
+            return d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended);
+        }
+        
+        function nodeClick(event, d) {
+            // Toggle selection
+            d3.selectAll('.node').classed('selected', false);
+            d3.select(this).classed('selected', true);
+            
+            console.log('Selected node:', d);
+        }
+        
+        function showTooltip(event, d) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.display = 'block';
+            tooltip.style.left = (event.pageX + 10) + 'px';
+            tooltip.style.top = (event.pageY + 10) + 'px';
+            tooltip.innerHTML = `
+                <strong>${d.label}</strong><br/>
+                <em>${d.type}</em><br/>
+                Doc: ${d.docId}<br/>
+                Level: ${d.level}
+                ${d.metadata?.path ? '<br/>Path: ' + d.metadata.path : ''}
+            `;
+        }
+        
+        function hideTooltip() {
+            document.getElementById('tooltip').style.display = 'none';
+        }
+        
+        // Auto-load on page load
+        // window.addEventListener('load', loadGraph);
+    </script>
+</body>
+</html>
+

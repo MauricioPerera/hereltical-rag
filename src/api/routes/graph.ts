@@ -10,6 +10,7 @@ import {
 } from '../../db/graphStore.js';
 import { buildSameTopicGraph, type SameTopicConfig } from '../../graph/relationsDetector.js';
 import { detectLinksInAllDocuments, getLinkStatistics, type LinkDetectionConfig } from '../../graph/linkDetector.js';
+import { exportGraph, exportSubgraph, exportGraphFormat, type GraphExportConfig } from '../../graph/graphVisualizer.js';
 
 const router = Router();
 
@@ -175,6 +176,116 @@ router.get('/link-stats', async (req, res) => {
     const stats = await getLinkStatistics();
     
     res.json(stats);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/graph/export
+ * Export complete graph for visualization
+ * 
+ * Query parameters:
+ * - format: cytoscape | d3 | vis | graphml (default: d3)
+ * - includeDocuments: true | false (default: true)
+ * - includeSections: true | false (default: true)
+ * - edgeTypes: comma-separated list (default: all)
+ * - maxNodes: number (default: unlimited)
+ * - docIds: comma-separated list of doc IDs
+ * - minDegree: minimum connections per node
+ */
+router.get('/export', async (req, res) => {
+  try {
+    const {
+      format = 'd3',
+      includeDocuments,
+      includeSections,
+      edgeTypes,
+      maxNodes,
+      docIds,
+      minDegree
+    } = req.query;
+    
+    const config: GraphExportConfig = {};
+    
+    if (includeDocuments !== undefined) {
+      config.includeDocuments = includeDocuments === 'true';
+    }
+    
+    if (includeSections !== undefined) {
+      config.includeSections = includeSections === 'true';
+    }
+    
+    if (edgeTypes && typeof edgeTypes === 'string') {
+      config.edgeTypes = edgeTypes.split(',');
+    }
+    
+    if (maxNodes && typeof maxNodes === 'string') {
+      config.maxNodes = parseInt(maxNodes, 10);
+    }
+    
+    if (docIds && typeof docIds === 'string') {
+      config.docIds = docIds.split(',');
+    }
+    
+    if (minDegree && typeof minDegree === 'string') {
+      config.minDegree = parseInt(minDegree, 10);
+    }
+    
+    const graphData = await exportGraphFormat(format as any, config);
+    
+    // Set content type based on format
+    if (format === 'graphml') {
+      res.type('application/xml');
+    } else {
+      res.type('application/json');
+    }
+    
+    res.send(graphData);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/graph/subgraph
+ * Export subgraph around specific nodes
+ * 
+ * Body:
+ * {
+ *   "seeds": ["node-id-1", "node-id-2"],
+ *   "maxHops": 2,
+ *   "maxNodes": 50,
+ *   "format": "d3"
+ * }
+ */
+router.post('/subgraph', async (req, res) => {
+  try {
+    const {
+      seeds,
+      maxHops = 1,
+      maxNodes = 50,
+      format = 'd3'
+    } = req.body;
+    
+    if (!seeds || !Array.isArray(seeds) || seeds.length === 0) {
+      return res.status(400).json({
+        error: 'seeds is required and must be a non-empty array'
+      });
+    }
+    
+    const subgraph = await exportSubgraph(seeds, maxHops, maxNodes);
+    
+    // Format if requested
+    if (format === 'd3') {
+      res.json(subgraph);
+    } else {
+      // Convert to requested format
+      const formatted = await exportGraphFormat(format, {
+        // Filter nodes/edges from subgraph
+      });
+      res.json(formatted);
+    }
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
