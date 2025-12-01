@@ -1,0 +1,65 @@
+id: file_write
+name: File Write
+type: tool
+category: filesystem
+description: |
+  Escribe contenido en archivos del sistema de archivos local.
+  Soporta texto plano, JSON, y datos binarios.
+  Puede crear directorios automaticamente si no existen.
+tags:
+  - filesystem
+  - io
+  - storage
+
+inputSchema:
+  type: object
+  properties:
+    path:
+      type: string
+      description: Ruta del archivo a escribir
+    content:
+      type: string
+      description: Contenido a escribir
+    encoding:
+      type: string
+      enum: [utf8, base64, binary]
+      description: Codificacion del contenido
+    createDirs:
+      type: boolean
+      description: Crear directorios si no existen
+  required:
+    - path
+    - content
+
+outputSchema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    bytesWritten:
+      type: number
+    path:
+      type: string
+
+implementation:
+  type: internal
+  ref: executor/filesystem
+
+examples:
+  - description: Escribir archivo de texto
+    input:
+      path: ./output/report.txt
+      content: "Reporte generado"
+      encoding: utf8
+      createDirs: true
+    expectedOutput:
+      success: true
+      bytesWritten: 17
+      path: ./output/report.txt
+
+limitations:
+  - Limite de 50MB por archivo
+  - Solo puede escribir en directorios permitidos
+
+version: "1.0.0"
+

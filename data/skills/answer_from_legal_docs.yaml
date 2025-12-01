@@ -1,0 +1,166 @@
+id: answer_from_legal_docs
+name: Answer from Legal Documents
+type: skill
+skillType: context_aware
+category: legal
+tags:
+  - legal
+  - terms
+  - policy
+  - compliance
+
+overview: |
+  Responde preguntas sobre términos legales, políticas de privacidad, términos de servicio
+  y condiciones de uso utilizando la base de conocimiento legal indexada en el RAG.
+  
+  Esta skill no ejecuta tools externas, sino que guía al agente para buscar información
+  relevante en los documentos legales y formular una respuesta precisa basada en ese contexto.
+
+# Referencias a documentos específicos en el RAG
+referencesDocuments:
+  - terms_of_service
+  - privacy_policy
+  - legal_notices
+  - data_protection_policy
+
+# Configuración de integración con RAG
+ragIntegration:
+  queryFilters:
+    doc_id: 
+      - terms_of_service
+      - privacy_policy
+      - legal_notices
+    level: [2, 3]  # H2 y H3 sections
+    is_leaf: 1
+  contextExtraction: |
+    Extract relevant sections that directly answer the user's question.
+    Focus on specific clauses, obligations, rights, and limitations.
+    Include exact wording from the legal documents when applicable.
+
+# No usa tools externas
+usesTools: []
+
+# Usa capacidades nativas del LLM
+nativeCapabilities:
+  - text_analysis
+  - legal_interpretation
+  - contextual_search
+  - structured_response
+
+instructions:
+  steps:
+    - Lee la pregunta del usuario cuidadosamente
+    - Identifica los conceptos legales clave (ej. cancelación, reembolso, privacidad, datos)
+    - Busca en los documentos legales usando el RAG con los filtros especificados
+    - Analiza las secciones recuperadas del RAG para encontrar respuestas directas
+    - Cita las secciones específicas de los documentos (incluye títulos de sección)
+    - Responde en lenguaje claro y accesible, manteniendo precisión legal
+    - Incluye advertencia si la respuesta requiere consulta con abogado
+  
+  prerequisites:
+    - Documentos legales indexados en el RAG
+    - Query del usuario clara y específica
+  
+  bestPractices:
+    - Siempre cita la fuente exacta (documento y sección)
+    - Mantén la precisión legal, no parafrasees conceptos críticos
+    - Si la información no está en los documentos, indícalo claramente
+    - Usa lenguaje claro pero preciso
+    - Incluye contexto relevante (efectividad, excepciones, limitaciones)
+  
+  antiPatterns:
+    - No inventes o asumas información legal que no esté en los documentos
+    - No des asesoramiento legal específico (solo informativo)
+    - No omitas advertencias o excepciones importantes
+    - No uses jerga legal sin explicarla
+
+parameters:
+  - name: query
+    type: string
+    required: true
+    description: Pregunta del usuario sobre aspectos legales
+  
+  - name: language
+    type: string
+    required: false
+    description: Idioma de la respuesta (default es español)
+    defaultValue: es
+  
+  - name: includeReferences
+    type: boolean
+    required: false
+    description: Incluir referencias exactas a secciones de documentos
+    defaultValue: true
+
+outputs:
+  - name: answer
+    type: string
+    description: Respuesta a la pregunta basada en documentos legales
+  
+  - name: sources
+    type: array
+    description: Lista de secciones de documentos consultadas
+  
+  - name: confidence
+    type: number
+    description: Nivel de confianza de la respuesta (0-1)
+  
+  - name: requiresLegalAdvice
+    type: boolean
+    description: Si la pregunta requiere consulta con abogado
+
+examples:
+  - name: Política de cancelación
+    input:
+      query: ¿Cuál es la política de cancelación del servicio?
+      language: es
+    output:
+      answer: |
+        Según la Sección 5.2 de los Términos de Servicio, puedes cancelar tu suscripción
+        en cualquier momento desde tu panel de usuario. La cancelación es efectiva al
+        final del período de facturación actual. No se realizan reembolsos prorrateados
+        por el tiempo no utilizado en el período actual.
+      sources:
+        - document: terms_of_service
+          section: 5.2 - Cancelación de Suscripción
+      confidence: 0.95
+      requiresLegalAdvice: false
+  
+  - name: Uso de datos personales
+    input:
+      query: ¿Cómo usan mis datos personales?
+      language: es
+    output:
+      answer: |
+        Según la Política de Privacidad (Sección 3.1), tus datos personales se utilizan para:
+        1. Proveer y mantener el servicio
+        2. Comunicaciones relacionadas con tu cuenta
+        3. Mejorar nuestros servicios
+        
+        No compartimos tus datos con terceros excepto para procesar pagos o cuando
+        sea requerido por ley (Sección 3.4).
+      sources:
+        - document: privacy_policy
+          section: 3.1 - Uso de Información Personal
+        - document: privacy_policy
+          section: 3.4 - Compartir con Terceros
+      confidence: 0.92
+      requiresLegalAdvice: false
+
+errorHandling:
+  commonErrors:
+    - No se encontró información relevante en los documentos
+    - Query demasiado ambigua
+    - Pregunta fuera del alcance de los documentos legales
+  
+  recovery:
+    - Pedir al usuario que reformule la pregunta más específicamente
+    - Sugerir consultar directamente los documentos completos
+    - Recomendar contactar con soporte legal si es necesario
+
+metadata:
+  version: "1.0.0"
+  author: Skill Bank System
+  lastUpdated: "2024-12-01"
+  requiresExternalServices: false
+

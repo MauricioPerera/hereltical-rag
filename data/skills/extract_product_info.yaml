@@ -1,0 +1,170 @@
+id: extract_product_info
+name: Extract Product Information
+type: skill
+skillType: context_aware
+category: product
+tags:
+  - product
+  - catalog
+  - specifications
+  - inventory
+
+overview: |
+  Extrae información específica sobre productos de catálogos y documentación técnica
+  indexados en el sistema RAG. Puede recuperar especificaciones, características,
+  precios, disponibilidad y comparaciones entre productos.
+  
+  Esta skill aprovecha el conocimiento estructurado en los documentos de productos
+  para proporcionar respuestas precisas y actualizadas.
+
+# Referencias a documentos de productos
+referencesDocuments:
+  - product_catalog
+  - technical_specifications
+  - user_manuals
+  - pricing_guide
+
+# Configuración RAG
+ragIntegration:
+  queryFilters:
+    doc_id:
+      - product_catalog
+      - technical_specifications
+    level: [1, 2, 3]  # All levels
+  contextExtraction: |
+    Extract structured product information including:
+    - Product name and model number
+    - Key specifications and features
+    - Pricing and availability
+    - Technical requirements
+    - Comparisons with similar products when relevant
+
+usesTools: []
+
+nativeCapabilities:
+  - information_extraction
+  - data_structuring
+  - comparison_analysis
+  - text_summarization
+
+instructions:
+  steps:
+    - Identifica el producto específico mencionado en la query
+    - Busca información relevante en el catálogo usando RAG
+    - Extrae datos estructurados (specs, features, precio)
+    - Organiza la información de manera clara y scannable
+    - Incluye comparaciones si se solicitan múltiples productos
+    - Menciona limitaciones o requisitos importantes
+  
+  prerequisites:
+    - Documentos de productos indexados en RAG
+    - Nombre o categoría de producto especificado
+  
+  bestPractices:
+    - Presenta información en formato estructurado (listas, tablas)
+    - Destaca especificaciones clave relevantes para la query
+    - Incluye información de disponibilidad si está disponible
+    - Menciona productos relacionados o alternativas cuando sea relevante
+  
+  antiPatterns:
+    - No inventes especificaciones que no estén en los documentos
+    - No omitas información crítica (limitaciones, requisitos)
+    - No mezcles información de diferentes versiones del producto
+
+parameters:
+  - name: query
+    type: string
+    required: true
+    description: Pregunta sobre producto(s) específico(s)
+  
+  - name: productName
+    type: string
+    required: false
+    description: Nombre específico del producto (opcional si está en query)
+  
+  - name: includeComparisons
+    type: boolean
+    required: false
+    description: Incluir comparaciones con productos similares
+    defaultValue: false
+  
+  - name: format
+    type: string
+    required: false
+    description: Formato de salida (structured, narrative, table)
+    defaultValue: structured
+
+outputs:
+  - name: productInfo
+    type: object
+    description: Información estructurada del producto
+  
+  - name: specifications
+    type: object
+    description: Especificaciones técnicas
+  
+  - name: availability
+    type: string
+    description: Estado de disponibilidad
+  
+  - name: relatedProducts
+    type: array
+    description: Productos relacionados o alternativos
+
+examples:
+  - name: Consulta de especificaciones
+    input:
+      query: ¿Cuáles son las especificaciones técnicas del modelo X500?
+      format: structured
+    output:
+      productInfo:
+        name: Modelo X500
+        category: Professional Series
+        status: Available
+      specifications:
+        processor: Intel Core i7-12700K
+        memory: 32GB DDR5
+        storage: 1TB NVMe SSD
+        graphics: NVIDIA RTX 3070
+        connectivity: WiFi 6E, Bluetooth 5.2
+      availability: In Stock
+      relatedProducts:
+        - Model X400 (Entry level)
+        - Model X600 (Premium)
+  
+  - name: Comparación de productos
+    input:
+      query: Compara el modelo X500 vs X600
+      includeComparisons: true
+    output:
+      comparison:
+        X500:
+          price: $1,499
+          processor: i7-12700K
+          memory: 32GB
+          target: Professional users
+        X600:
+          price: $2,199
+          processor: i9-12900K
+          memory: 64GB
+          target: Power users
+      recommendation: |
+        X500 es ideal para usuarios profesionales con presupuesto medio.
+        X600 ofrece mejor rendimiento para cargas de trabajo intensivas.
+
+errorHandling:
+  commonErrors:
+    - Producto no encontrado en catálogo
+    - Especificaciones no disponibles
+    - Información de pricing desactualizada
+  
+  recovery:
+    - Buscar productos similares
+    - Sugerir categorías relacionadas
+    - Recomendar contactar con ventas para información actualizada
+
+metadata:
+  version: "1.0.0"
+  author: Skill Bank System
+  lastUpdated: "2024-12-01"
+

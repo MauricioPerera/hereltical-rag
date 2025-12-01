@@ -1,0 +1,130 @@
+id: stripe_api_handler
+name: Stripe API Handler
+type: skill
+category: api
+tags:
+  - payments
+  - stripe
+  - financial
+  - api
+version: "1.0.0"
+
+usesTools:
+  - http_request
+
+overview: |
+  Interactua con la API de Stripe para gestionar pagos, clientes, suscripciones
+  y transacciones. Usa la tool http_request con autenticacion Bearer.
+  Soporta operaciones de lectura (listar, obtener) y escritura (crear, actualizar).
+
+instructions:
+  steps:
+    - Obtener STRIPE_SECRET_KEY del entorno o configuracion
+    - Identificar la operacion a realizar (listar clientes, crear pago, etc)
+    - Construir URL base https://api.stripe.com/v1/{resource}
+    - Preparar headers con Authorization Bearer {STRIPE_SECRET_KEY}
+    - Para operaciones POST, preparar body con parametros requeridos
+    - Ejecutar http_request tool con metodo, URL, headers y body
+    - Parsear respuesta JSON de Stripe
+    - Manejar errores segun codigo HTTP y mensaje de Stripe
+    - Retornar datos estructurados al usuario
+  
+  prerequisites:
+    - Variable de entorno STRIPE_SECRET_KEY configurada
+    - Cuenta de Stripe activa (modo test o produccion)
+    - Conexion a internet estable
+  
+  bestPractices:
+    - Usar idempotency-key header para operaciones de escritura
+    - Implementar retry con backoff exponencial para errores 429
+    - Cachear resultados de operaciones de lectura por 5 minutos
+    - Loguear stripe_request_id de cada operacion para debugging
+    - Validar montos antes de crear charges
+    - Usar modo test (sk_test_) durante desarrollo
+  
+  antiPatterns:
+    - NO loguear o almacenar el API key en logs o bases de datos
+    - NO ignorar errores 429 (rate limit) - siempre esperar segun Retry-After
+    - NO hacer charges directos sin confirmar monto con usuario
+    - NO almacenar numeros de tarjeta completos
+    - NO usar API keys de produccion en entornos de desarrollo
+
+parameters:
+  - name: action
+    type: string
+    required: true
+    description: Operacion a realizar
+    enum:
+      - list_customers
+      - get_customer
+      - create_customer
+      - list_charges
+      - create_charge
+      - list_subscriptions
+  
+  - name: customerId
+    type: string
+    required: false
+    description: ID del cliente de Stripe (cus_xxx) para operaciones especificas
+  
+  - name: amount
+    type: number
+    required: false
+    description: Monto en centavos para crear charges
+  
+  - name: currency
+    type: string
+    required: false
+    description: Moneda para transacciones (usd, eur, etc)
+    default: usd
+
+outputs:
+  - name: data
+    type: object
+    description: Respuesta de Stripe parseada (customers, charges, etc)
+  
+  - name: requestId
+    type: string
+    description: stripe_request_id para tracking y debugging
+  
+  - name: metadata
+    type: object
+    description: Info adicional (rate limit, tiempo de respuesta)
+
+examples:
+  - situation: Usuario quiere ver lista de sus clientes
+    input:
+      action: list_customers
+    expectedOutput: |
+      Lista de objetos Customer con id, email, name, created
+    notes: Usa paginacion para mas de 100 resultados
+  
+  - situation: Crear un pago de $10 para un cliente
+    input:
+      action: create_charge
+      customerId: cus_123abc
+      amount: 1000
+      currency: usd
+    expectedOutput: |
+      Objeto Charge con id, status, amount_captured
+    notes: Validar que customerId existe antes de crear charge
+  
+  - situation: Ver transacciones recientes
+    input:
+      action: list_charges
+    expectedOutput: |
+      Lista de charges con monto, fecha, estado, cliente
+
+errorHandling:
+  commonErrors:
+    - "401 Unauthorized - Verificar que STRIPE_SECRET_KEY es valida"
+    - "429 Too Many Requests - Esperar segun header Retry-After (segundos)"
+    - "402 Payment Required - Cuenta sin fondos o plan expirado"
+    - "404 Not Found - Resource (customer, charge) no existe"
+  
+  recovery:
+    - Para errores 401/403 - Verificar API key y permisos
+    - Para errores 429 - Esperar y reintentar hasta 3 veces con backoff
+    - Para errores 404 - Validar que el ID existe antes de la operacion
+    - Para errores de red - Reintentar con timeout incremental
+

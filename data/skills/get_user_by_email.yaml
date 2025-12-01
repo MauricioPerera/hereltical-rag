@@ -1,0 +1,120 @@
+id: get_user_by_email
+name: Get User by Email
+type: skill
+category: crud
+tags:
+  - users
+  - search
+  - authentication
+  - crud
+version: "1.0.0"
+
+usesTools:
+  - db_query
+
+overview: |
+  Busca un usuario en la tabla users por su email.
+  Excluye usuarios eliminados (soft delete).
+  Retorna datos del usuario sin exponer password_hash.
+
+instructions:
+  steps:
+    - Validar formato de email (regex RFC 5322)
+    - Preparar query SELECT id, email, role, created_at, last_login FROM users WHERE email = ? AND deleted_at IS NULL
+    - Ejecutar db_query tool con prepared statement
+    - Si rows.length = 0, retornar null (usuario no encontrado)
+    - Si rows.length = 1, retornar usuario (omitir password_hash)
+    - Si rows.length > 1, error critico (email deberia ser UNIQUE)
+    - Loguear busqueda si es para auditoria
+  
+  prerequisites:
+    - Tabla users existe con columna email (UNIQUE constraint)
+    - Columna deleted_at existe para filtrar eliminados
+    - Email es case-insensitive o normalizado (lowercase)
+  
+  bestPractices:
+    - NUNCA retornar password_hash en la respuesta
+    - Excluir usuarios eliminados con WHERE deleted_at IS NULL
+    - Validar formato de email antes de query
+    - Normalizar email a lowercase antes de buscar
+    - Usar SELECT especifico (no SELECT *)
+    - Considerar rate limiting para prevenir enumeracion
+  
+  antiPatterns:
+    - NO incluir password_hash en SELECT
+    - NO permitir busqueda sin validar email
+    - NO olvidar filtro deleted_at IS NULL
+    - NO exponer información sensible en logs
+    - NO permitir busqueda masiva sin rate limit
+
+parameters:
+  - name: email
+    type: string
+    required: true
+    description: Email del usuario a buscar
+  
+  - name: includeMetadata
+    type: boolean
+    required: false
+    description: Incluir metadata adicional (perfil, preferencias)
+    default: false
+
+outputs:
+  - name: user
+    type: object
+    description: Datos del usuario (null si no existe)
+  
+  - name: found
+    type: boolean
+    description: true si usuario fue encontrado
+
+examples:
+  - situation: Buscar usuario existente
+    input:
+      email: johndoe@example.com
+    expectedOutput: |
+      {
+        found: true,
+        user: {
+          id: 42,
+          email: johndoe@example.com,
+          role: user,
+          createdAt: 2024-01-01T00:00:00Z,
+          lastLogin: 2024-01-15T09:00:00Z
+        }
+      }
+    notes: password_hash NO se incluye en la respuesta
+  
+  - situation: Buscar usuario inexistente
+    input:
+      email: notfound@example.com
+    expectedOutput: |
+      { found: false, user: null }
+    notes: No existe o fue eliminado (soft delete)
+  
+  - situation: Buscar con metadata adicional
+    input:
+      email: johndoe@example.com
+      includeMetadata: true
+    expectedOutput: |
+      {
+        found: true,
+        user: {
+          id: 42,
+          email: johndoe@example.com,
+          role: user,
+          profile: { name: John Doe, phone: +1234567890 }
+        }
+      }
+
+errorHandling:
+  commonErrors:
+    - "Invalid email format - Email no cumple RFC 5322"
+    - "Database timeout - Query tardo mas de 5 segundos"
+    - "Multiple users found - Violacion de UNIQUE constraint (critico)"
+  
+  recovery:
+    - Para formato invalido - Validar con regex antes de query
+    - Para timeout - Verificar indices en columna email
+    - Para duplicados - Alert critico, verificar integridad de BD
+

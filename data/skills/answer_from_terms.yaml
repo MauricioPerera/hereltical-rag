@@ -1,0 +1,228 @@
+id: answer_from_terms_and_conditions
+name: Answer from Terms and Conditions
+type: skill
+skillType: context_aware
+category: legal
+tags:
+  - terms
+  - legal
+  - support
+  - documentation
+version: "1.0.0"
+
+usesTools: []  # No external tools
+referencesDocuments:
+  - terms_and_conditions
+  - privacy_policy
+
+overview: |
+  Responde preguntas sobre términos y condiciones del servicio.
+  Usa el RAG de documentos existente para encontrar secciones relevantes.
+  Conecta directamente con el sistema de RAG jerárquico ya implementado.
+
+instructions:
+  steps:
+    - Analizar la pregunta del usuario e identificar tema principal
+    - Clasificar tipo de consulta (refunds, privacy, cancellation, payment, etc)
+    - Mapear tema a documento apropiado (terms o privacy policy)
+    - Construir query de búsqueda semántica para el RAG
+    - Ejecutar búsqueda en RAG con filtros apropiados
+    - Si se encuentra en nivel H2, incluir contexto H1 (parent section)
+    - Leer contexto completo de la sección
+    - Formular respuesta basada en texto oficial del documento
+    - Citar sección específica con número para verificabilidad
+    - Si no se encuentra información, indicarlo explícitamente
+  
+  prerequisites:
+    - Documento terms_and_conditions indexado en el RAG
+    - Documento privacy_policy indexado en el RAG
+    - API del RAG disponible en /api/query/smart
+  
+  bestPractices:
+    - SIEMPRE citar número de sección específica
+    - Usar lenguaje del documento original, no parafrasear excesivamente
+    - Si información parcial, indicar qué falta
+    - Si no está en T&C, decir "no está cubierto en nuestros términos"
+    - Incluir link directo a sección si está disponible
+    - Para temas legales sensibles, sugerir consultar con equipo legal
+  
+  antiPatterns:
+    - NO inventar información que no está en los documentos
+    - NO interpretar legalmente, solo citar
+    - NO mezclar información de múltiples secciones sin clarificar
+    - NO omitir disclaimers importantes
+
+ragIntegration:
+  endpoint: /api/query/smart
+  method: POST
+  strategy: |
+    1. Vector search inicial con k=5
+    2. Filtrar por doc_id según tema
+    3. Si resultado en H2, expandir a H1 (parent context)
+    4. Usar graph expansion para secciones relacionadas
+    5. Priorizar resultados con mayor relevancia
+
+documentStructure:
+  terms_and_conditions:
+    docId: terms_and_conditions
+    title: Terms and Conditions of Service
+    sections:
+      - id: sec-1
+        level: 1
+        title: "Account Terms"
+        covers: [account_creation, user_responsibilities]
+      
+      - id: sec-2
+        level: 1
+        title: "Privacy and Data Protection"
+        covers: [data_collection, data_usage, gdpr]
+      
+      - id: sec-3
+        level: 1
+        title: "Payment Terms"
+        covers: [billing, payment_methods, pricing]
+      
+      - id: sec-7
+        level: 1
+        title: "Refund Policy"
+        covers: [refund_eligibility, refund_process, timeframes]
+      
+      - id: sec-9
+        level: 1
+        title: "Cancellation and Termination"
+        covers: [user_cancellation, platform_termination]
+      
+      - id: sec-12
+        level: 1
+        title: "Limitation of Liability"
+        covers: [liability_limits, disclaimers]
+
+parameters:
+  - name: userQuestion
+    type: string
+    required: true
+    description: Pregunta del usuario sobre términos y condiciones
+  
+  - name: includeContext
+    type: boolean
+    required: false
+    description: Incluir contexto de secciones relacionadas
+    default: true
+
+outputs:
+  - name: answer
+    type: string
+    description: Respuesta basada en documentos oficiales
+  
+  - name: citation
+    type: object
+    description: Referencia a sección específica
+    properties:
+      document: string
+      sectionId: string
+      sectionTitle: string
+      url: string
+  
+  - name: confidence
+    type: number
+    description: Confianza en la respuesta (0-1)
+
+examples:
+  - situation: Usuario pregunta sobre política de reembolsos
+    input:
+      userQuestion: "¿Puedo obtener reembolso si cancelo mi suscripción?"
+    expectedOutput: |
+      Respuesta: Sí, según nuestra Política de Reembolso (Sección 7), 
+      puedes obtener reembolso si cancelas dentro de los primeros 14 días
+      de tu período de facturación. El reembolso se procesa en 5-7 días hábiles.
+      
+      Para períodos posteriores a 14 días, se aplica un reembolso prorrateado
+      basado en días no utilizados.
+      
+      Citation:
+      - Document: Terms and Conditions
+      - Section: 7 - Refund Policy
+      - URL: /terms#refund-policy
+    notes: |
+      Agente ejecutó:
+      1. POST /api/query/smart con query="refund cancellation policy"
+      2. Filtro: { doc_id: "terms_and_conditions" }
+      3. Encontró sec-7 con relevance 0.94
+      4. Expandió a parent H1 para contexto completo
+      5. Formuló respuesta citando sección específica
+  
+  - situation: Pregunta sobre privacidad de datos
+    input:
+      userQuestion: "¿Qué datos personales recopilan?"
+    expectedOutput: |
+      Respuesta: Según nuestra Política de Privacidad (Sección 2.1),
+      recopilamos los siguientes datos personales:
+      
+      - Información de cuenta: email, nombre, contraseña (encriptada)
+      - Datos de uso: páginas visitadas, features utilizados
+      - Datos técnicos: dirección IP, tipo de navegador
+      - Información de pago: procesada por terceros (no almacenamos tarjetas)
+      
+      Todos los datos se procesan según GDPR y se almacenan de forma segura.
+      
+      Citation:
+      - Document: Privacy Policy
+      - Section: 2.1 - Data Collection
+      - URL: /privacy#data-collection
+    notes: |
+      Búsqueda en privacy_policy doc, encontró sección específica,
+      incluyó lista completa del documento original.
+  
+  - situation: Pregunta sobre algo no cubierto en términos
+    input:
+      userQuestion: "¿Puedo transferir mi cuenta a otra persona?"
+    expectedOutput: |
+      Respuesta: No se encontró información específica sobre transferencia
+      de cuentas en nuestros Términos y Condiciones actuales.
+      
+      Te recomendamos contactar a nuestro equipo de soporte para consultar
+      sobre casos especiales: support@company.com
+      
+      Búsqueda realizada en: Terms and Conditions (todas las secciones)
+      Confianza: Baja (información no disponible en documentos)
+    notes: |
+      RAG no encontró información relevante. Skill indica explícitamente
+      que no está documentado y sugiere contactar soporte.
+
+errorHandling:
+  commonErrors:
+    - "Documento no indexado - terms_and_conditions no existe en RAG"
+    - "RAG timeout - Búsqueda tardó más de 5 segundos"
+    - "Sección ambigua - Múltiples secciones con información similar"
+  
+  recovery:
+    - Para doc no indexado - Indicar que sistema está en mantenimiento
+    - Para timeout - Reintentar con query más específica
+    - Para ambigüedad - Listar todas las secciones relevantes
+
+queryExamples:
+  - userQuestion: "¿Cómo cancelo mi suscripción?"
+    searchQuery: "cancel subscription how to process"
+    targetDocument: terms_and_conditions
+    expectedSection: sec-9
+    filters:
+      doc_id: terms_and_conditions
+      level: 2
+  
+  - userQuestion: "¿Mi información está segura?"
+    searchQuery: "data security encryption protection"
+    targetDocument: privacy_policy
+    expectedSection: sec-4
+    filters:
+      doc_id: privacy_policy
+  
+  - userQuestion: "¿Qué pasa si no pago a tiempo?"
+    searchQuery: "late payment consequences suspension"
+    targetDocument: terms_and_conditions
+    expectedSection: sec-3
+    filters:
+      doc_id: terms_and_conditions
+      level: 2
+
+requiresExternalServices: false  # Uses internal RAG, no external API
+

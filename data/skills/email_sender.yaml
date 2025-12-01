@@ -1,0 +1,102 @@
+id: email_sender
+name: Email Sender
+type: skill
+category: communication
+tags:
+  - email
+  - smtp
+  - communication
+  - notifications
+version: "1.0.0"
+
+usesTools:
+  - http_request
+
+overview: |
+  Envia emails via servicios de email (SendGrid, Mailgun, etc).
+  Soporta emails HTML, adjuntos, multiples destinatarios y templates.
+  Usa http_request para llamar a las APIs de los servicios de email.
+
+instructions:
+  steps:
+    - Obtener credenciales del servicio de email (API key)
+    - Preparar contenido del email (subject, body, destinatarios)
+    - Si usa template, cargar variables del template
+    - Construir payload segun formato del servicio (SendGrid, etc)
+    - Ejecutar http_request con POST al endpoint del servicio
+    - Verificar respuesta y obtener message_id
+    - Retornar confirmacion de envio
+  
+  prerequisites:
+    - API key del servicio de email configurada
+    - Email verificado del remitente (from address)
+    - Destinatarios con emails validos
+  
+  bestPractices:
+    - Validar formato de emails antes de enviar
+    - Usar templates para emails recurrentes
+    - Incluir unsubscribe link en emails marketing
+    - Trackear delivery status via webhooks
+    - Usar modo sandbox en desarrollo
+  
+  antiPatterns:
+    - NO enviar emails sin validar destinatarios
+    - NO ignorar errores de bounce o spam
+    - NO hardcodear contenido sensible en templates
+
+parameters:
+  - name: to
+    type: array
+    required: true
+    description: Lista de destinatarios (emails)
+  
+  - name: subject
+    type: string
+    required: true
+    description: Asunto del email
+  
+  - name: body
+    type: string
+    required: true
+    description: Contenido del email (HTML o texto)
+  
+  - name: from
+    type: string
+    required: false
+    description: Email del remitente
+    default: noreply@example.com
+  
+  - name: attachments
+    type: array
+    required: false
+    description: Archivos adjuntos (base64)
+
+outputs:
+  - name: messageId
+    type: string
+    description: ID del mensaje enviado
+  
+  - name: status
+    type: string
+    description: Estado del envio (queued, sent, failed)
+
+examples:
+  - situation: Enviar notificacion de bienvenida
+    input:
+      to: [user@example.com]
+      subject: "Bienvenido a nuestra plataforma"
+      body: "<h1>Hola!</h1><p>Gracias por registrarte</p>"
+    expectedOutput: |
+      messageId y status "sent"
+
+errorHandling:
+  commonErrors:
+    - "Invalid API key - Verificar credenciales"
+    - "Bounce - Email invalido o no existe"
+    - "Rate limit - Demasiados emails por minuto"
+  
+  recovery:
+    - Para API key invalida - Refrescar o reconfigurar
+    - Para bounce - Marcar email como invalido
+    - Para rate limit - Implementar queue con delay
+

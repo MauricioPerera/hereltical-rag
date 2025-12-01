@@ -1,0 +1,73 @@
+id: code_executor
+name: Code Executor
+type: tool
+category: execution
+description: |
+  Ejecuta codigo en entornos aislados (sandboxed).
+  Soporta Python, JavaScript y shell scripts.
+  Util para procesamiento de datos, calculos y transformaciones.
+tags:
+  - execution
+  - python
+  - javascript
+  - sandbox
+
+inputSchema:
+  type: object
+  properties:
+    language:
+      type: string
+      enum: [python, javascript, bash]
+      description: Lenguaje de programacion
+    code:
+      type: string
+      description: Codigo a ejecutar
+    timeout:
+      type: number
+      description: Timeout en segundos (default 10)
+    env:
+      type: object
+      description: Variables de entorno
+  required:
+    - language
+    - code
+
+outputSchema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    stdout:
+      type: string
+    stderr:
+      type: string
+    exitCode:
+      type: number
+
+implementation:
+  type: internal
+  ref: executor/sandbox
+
+examples:
+  - description: Ejecutar script Python
+    input:
+      language: python
+      code: |
+        import json
+        data = {"total": 100 + 200}
+        print(json.dumps(data))
+    expectedOutput:
+      success: true
+      stdout: '{"total": 300}'
+      exitCode: 0
+
+limitations:
+  - Timeout maximo de 60 segundos
+  - Sin acceso a red
+  - Sin acceso al filesystem fuera del sandbox
+  - Memoria limitada a 512MB
+
+costPerCall: 0.01
+
+version: "1.0.0"
+

@@ -1,0 +1,118 @@
+id: delete_user
+name: Delete User (Soft Delete)
+type: skill
+category: crud
+tags:
+  - users
+  - deletion
+  - soft-delete
+  - crud
+version: "1.0.0"
+
+usesTools:
+  - db_query
+
+overview: |
+  Elimina un usuario de la tabla users usando soft delete.
+  En lugar de DELETE fisico, marca el usuario como deleted_at = NOW().
+  Preserva el registro para auditoria y posible recuperacion.
+
+instructions:
+  steps:
+    - Validar que user_id es un numero positivo
+    - Verificar que usuario existe (SELECT id FROM users WHERE id = ? AND deleted_at IS NULL)
+    - Si no existe o ya esta eliminado, retornar error descriptivo
+    - Preparar query UPDATE users SET deleted_at = NOW(), updated_at = NOW() WHERE id = ?
+    - Ejecutar db_query tool con prepared statement
+    - Verificar que affectedRows = 1
+    - Loguear eliminacion con user_id y timestamp para auditoria
+    - Opcionalmente, marcar sesiones del usuario como invalidas
+    - Retornar confirmacion de eliminacion
+  
+  prerequisites:
+    - Tabla users tiene columna deleted_at (DATETIME, nullable)
+    - Tabla users tiene columna updated_at (DATETIME)
+    - Usuario existe y no esta previamente eliminado
+  
+  bestPractices:
+    - USAR soft delete (UPDATE) en lugar de hard delete (DELETE FROM)
+    - Preservar datos para auditoria y compliance
+    - Loguear quien elimino al usuario y cuando
+    - Invalidar sesiones activas del usuario eliminado
+    - Permitir recuperacion del usuario (undelete) si es necesario
+    - Excluir usuarios eliminados en queries con WHERE deleted_at IS NULL
+  
+  antiPatterns:
+    - NO usar DELETE FROM users (perdida irreversible de datos)
+    - NO eliminar sin verificar que existe primero
+    - NO olvidar actualizar updated_at
+    - NO permitir eliminacion sin autorizacion
+    - NO exponer deleted users en listados publicos
+
+parameters:
+  - name: userId
+    type: number
+    required: true
+    description: ID del usuario a eliminar
+  
+  - name: reason
+    type: string
+    required: false
+    description: Razon de la eliminacion (para auditoria)
+  
+  - name: deletedBy
+    type: number
+    required: false
+    description: ID del usuario que ejecuta la eliminacion (admin)
+
+outputs:
+  - name: success
+    type: boolean
+    description: true si usuario fue eliminado exitosamente
+  
+  - name: userId
+    type: number
+    description: ID del usuario eliminado
+  
+  - name: deletedAt
+    type: string
+    description: Timestamp de eliminacion (ISO 8601)
+
+examples:
+  - situation: Eliminar usuario por solicitud propia
+    input:
+      userId: 42
+      reason: User requested account deletion
+    expectedOutput: |
+      { success: true, userId: 42, deletedAt: 2024-01-15T10:30:00Z }
+    notes: Usuario puede recuperar cuenta dentro de 30 dias
+  
+  - situation: Eliminar usuario por violacion de terminos
+    input:
+      userId: 99
+      reason: Terms of service violation
+      deletedBy: 1
+    expectedOutput: |
+      { success: true, userId: 99, deletedAt: 2024-01-15T10:31:00Z }
+    notes: Admin ID 1 ejecuto la eliminacion, queda registrado
+  
+  - situation: Error al intentar eliminar usuario inexistente
+    input:
+      userId: 9999
+    expectedOutput: |
+      ERROR: User not found or already deleted
+    notes: Verificacion previa debe detectar esto
+
+errorHandling:
+  commonErrors:
+    - "User not found - user_id no existe en la tabla"
+    - "User already deleted - deleted_at ya tiene valor"
+    - "Insufficient permissions - Usuario no autorizado para eliminar"
+    - "Foreign key constraint - Usuario tiene registros dependientes"
+  
+  recovery:
+    - Para usuario inexistente - Verificar user_id y sugerir busqueda
+    - Para ya eliminado - Retornar fecha de eliminacion previa
+    - Para permisos - Verificar role del ejecutor (debe ser admin)
+    - Para constraints - Primero eliminar registros dependientes o usar CASCADE
+

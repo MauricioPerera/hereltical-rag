@@ -1,0 +1,242 @@
+id: summarize_technical_docs
+name: Summarize Technical Documentation
+type: skill
+skillType: hybrid
+category: documentation
+tags:
+  - documentation
+  - technical
+  - summarization
+  - learning
+
+overview: |
+  Genera resúmenes estructurados de documentación técnica combinando búsqueda en RAG,
+  capacidades nativas de summarization del LLM, y formatos de output específicos.
+  
+  Esta skill es "hybrid" porque combina:
+  - Context-aware: Busca en documentación indexada
+  - Instructional: Usa capacidades nativas de summarization
+  - Structured output: Aplica templates específicos
+
+# Referencias a documentos técnicos
+referencesDocuments:
+  - api_documentation
+  - developer_guides
+  - architecture_docs
+  - technical_tutorials
+
+# Configuración RAG
+ragIntegration:
+  queryFilters:
+    doc_id:
+      - api_documentation
+      - developer_guides
+      - architecture_docs
+    level: [1, 2]  # High-level sections
+  contextExtraction: |
+    Extract key technical concepts, main topics, and important details.
+    Focus on structure, flow, and relationships between concepts.
+
+usesTools: []
+
+nativeCapabilities:
+  - text_summarization
+  - concept_extraction
+  - structure_generation
+  - technical_writing
+
+# Template para output estructurado
+template: |
+  # Technical Summary: {topic}
+  
+  ## Overview
+  {high_level_summary}
+  
+  ## Key Concepts
+  {concepts_list}
+  
+  ## Main Topics
+  {topics_breakdown}
+  
+  ## Important Details
+  {critical_details}
+  
+  ## Prerequisites
+  {prerequisites}
+  
+  ## Next Steps
+  {suggested_actions}
+
+# Metodología de summarization
+methodology: |
+  Técnica de summarization en capas:
+  1. Extractive: Identificar frases clave del documento
+  2. Abstractive: Reformular en lenguaje más accesible
+  3. Hierarchical: Organizar en estructura de importancia
+  4. Progressive: De general a específico
+
+instructions:
+  steps:
+    - Identifica el documento o topic técnico a resumir
+    - Busca secciones relevantes usando RAG
+    - Extrae conceptos clave y estructura principal
+    - Genera overview de alto nivel (2-3 oraciones)
+    - Lista conceptos principales con breves explicaciones
+    - Organiza topics en orden lógico de aprendizaje
+    - Identifica detalles críticos (warnings, requisitos)
+    - Sugiere prerequisites y próximos pasos
+    - Aplica template estructurado
+  
+  prerequisites:
+    - Documentación técnica indexada
+    - Topic o documento específico identificado
+  
+  bestPractices:
+    - Mantén summaries concisos pero completos
+    - Prioriza información práctica y accionable
+    - Usa lenguaje claro sin perder precisión técnica
+    - Incluye ejemplos cuando sean críticos para entendimiento
+    - Estructura en niveles de detalle (overview → específicos)
+    - Destaca warnings y limitaciones importantes
+  
+  antiPatterns:
+    - No omitas información crítica de seguridad o requisitos
+    - No asumas conocimiento previo sin listar prerequisites
+    - No uses jerga sin contexto o explicación
+    - No generes summaries demasiado largos (max 500 palabras)
+
+parameters:
+  - name: topic
+    type: string
+    required: true
+    description: Topic o documento técnico a resumir
+  
+  - name: detailLevel
+    type: string
+    required: false
+    description: Nivel de detalle (brief, standard, detailed)
+    defaultValue: standard
+  
+  - name: audience
+    type: string
+    required: false
+    description: Audiencia objetivo (beginner, intermediate, advanced)
+    defaultValue: intermediate
+  
+  - name: format
+    type: string
+    required: false
+    description: Formato de output (markdown, plain, structured)
+    defaultValue: markdown
+
+outputs:
+  - name: summary
+    type: string
+    description: Summary estructurado del documento técnico
+  
+  - name: keyPoints
+    type: array
+    description: Lista de puntos clave extraídos
+  
+  - name: prerequisites
+    type: array
+    description: Prerequisites identificados
+  
+  - name: relatedTopics
+    type: array
+    description: Topics relacionados para profundizar
+
+examples:
+  - name: Resumir API Documentation
+    input:
+      topic: REST API Authentication
+      detailLevel: standard
+      audience: intermediate
+    output:
+      summary: |
+        # Technical Summary: REST API Authentication
+        
+        ## Overview
+        Nuestro API usa OAuth 2.0 para autenticación. Los clientes obtienen access tokens
+        mediante client credentials flow y los incluyen en headers de cada request.
+        
+        ## Key Concepts
+        - **OAuth 2.0**: Protocolo de autorización estándar
+        - **Access Token**: JWT con 1 hora de validez
+        - **Refresh Token**: Token de larga duración para renovar access
+        - **Scopes**: Permisos granulares (read, write, admin)
+        
+        ## Main Topics
+        1. Registrar aplicación y obtener credentials
+        2. Implementar flujo de autenticación
+        3. Manejar tokens y renovación
+        4. Gestionar errores de autorización
+        
+        ## Important Details
+        - Tokens deben enviarse en header `Authorization: Bearer {token}`
+        - Rate limit: 100 requests/minuto por token
+        - Tokens expirados retornan 401, renovar automáticamente
+        
+        ## Prerequisites
+        - Cuenta de desarrollador activa
+        - Conocimiento básico de OAuth 2.0
+        - Cliente HTTP (curl, Postman, o library)
+        
+        ## Next Steps
+        - Registra tu aplicación en Developer Portal
+        - Implementa token refresh automático
+        - Revisa ejemplos de código en SDKs oficiales
+      keyPoints:
+        - OAuth 2.0 con client credentials
+        - JWT tokens con 1h validez
+        - Rate limit 100 req/min
+        - Auto-refresh recomendado
+      prerequisites:
+        - Developer account
+        - OAuth 2.0 basics
+        - HTTP client
+      relatedTopics:
+        - API Rate Limiting
+        - Error Handling
+        - SDK Documentation
+  
+  - name: Brief summary para beginners
+    input:
+      topic: GraphQL Basics
+      detailLevel: brief
+      audience: beginner
+    output:
+      summary: |
+        # Technical Summary: GraphQL Basics
+        
+        ## Overview
+        GraphQL es un lenguaje de query para APIs que te permite pedir exactamente
+        los datos que necesitas, ni más ni menos.
+        
+        ## Key Concepts
+        - **Query**: Pedir datos del servidor
+        - **Schema**: Define qué datos están disponibles
+        - **Resolver**: Función que obtiene los datos solicitados
+        
+        ## Next Steps
+        - Explora el GraphQL Playground interactivo
+        - Prueba queries básicos de ejemplo
+        - Lee la guía de Schema Basics
+
+errorHandling:
+  commonErrors:
+    - Documento no encontrado en sistema
+    - Topic demasiado amplio para resumir efectivamente
+    - Documentación incompleta o desactualizada
+  
+  recovery:
+    - Sugerir temas más específicos
+    - Listar documentos disponibles relacionados
+    - Generar summary parcial con advertencia
+
+metadata:
+  version: "1.0.0"
+  author: Skill Bank System
+  lastUpdated: "2024-12-01"
+  requiresExternalServices: false
+

@@ -1,0 +1,79 @@
+id: http_request
+name: HTTP Request
+type: tool
+category: http
+description: |
+  Realiza peticiones HTTP a cualquier endpoint externo.
+  Soporta los metodos GET, POST, PUT, DELETE con headers personalizados y body.
+  Ideal para integrarse con APIs REST de terceros.
+tags:
+  - http
+  - api
+  - network
+
+inputSchema:
+  type: object
+  properties:
+    method:
+      type: string
+      enum: [GET, POST, PUT, DELETE, PATCH]
+      description: Metodo HTTP a usar
+    url:
+      type: string
+      description: URL completa del endpoint
+    headers:
+      type: object
+      description: Headers HTTP opcionales
+    body:
+      type: object
+      description: Cuerpo de la peticion (para POST/PUT)
+  required:
+    - method
+    - url
+
+outputSchema:
+  type: object
+  properties:
+    status:
+      type: number
+      description: Codigo de estado HTTP
+    body:
+      type: any
+      description: Respuesta del servidor
+    headers:
+      type: object
+      description: Headers de la respuesta
+
+implementation:
+  type: internal
+  ref: executor/http
+
+examples:
+  - description: GET request simple
+    input:
+      method: GET
+      url: https://api.example.com/users
+    expectedOutput:
+      status: 200
+      body: [...]
+  
+  - description: POST con autenticacion
+    input:
+      method: POST
+      url: https://api.stripe.com/v1/charges
+      headers:
+        Authorization: Bearer sk_test_xxx
+      body:
+        amount: 1000
+        currency: usd
+    expectedOutput:
+      status: 200
+      body: { id: ch_xxx, ... }
+
+limitations:
+  - Timeout de 30 segundos por defecto
+  - No soporta uploads de archivos grandes (>10MB)
+  - Requiere conexion a internet
+
+version: "1.0.0"
+

@@ -7,10 +7,43 @@ This project demonstrates how to build an advanced RAG system that combines:
 - **Knowledge graph** with explicit cross-document relationships
 - **Hybrid retrieval** (vector search + graph traversal)
 - **Multi-hop reasoning** for richer context discovery
+- **Skill Bank** ⭐ NEW! Meta-tool for agent capability discovery
 
 🎯 **Web UI Available!** Entity extraction, concept graphs, and visual Knowledge Graph Explorer!
 
+🤖 **Skill Bank!** Experimental system for agents to discover and compose capabilities dynamically!
+
 ## Features
+
+### 🤖 Skill Bank - Complete 6-Layer System ⭐ NEW!
+
+-   **Meta-Tool for Agents**
+    -   Single unified interface for capability discovery and execution
+    -   Agents discover what they can do dynamically via semantic search
+    -   No need to predefine all agent tools - grows organically
+    -   **Vision:** From tool orchestrator → intelligent assistant that learns
+    
+-   **Tools + Skills Architecture** 🎯
+    -   **Tools**: Atomic/generic executables (like n8n nodes: http_request, db_query)
+    -   **Skills**: 4 tipos ([details](docs/SKILLBANK_SKILL_TYPES.md)):
+        -   **Tool-based**: Orquesta tools externas (stripe_api_handler)
+        -   **Instructional**: Usa capacidades nativas del LLM (create_cornell_notes)
+        -   **Context-aware**: Apunta a documentos en RAG (answer_from_terms)
+        -   **Hybrid**: Combina tools + docs + LLM nativo
+    -   **Design principle**: 1 atomic tool → N specific skills → High vector diversity
+    -   **Analogy**: Tools = n8n Nodes, Skills = n8n Workflows ([comparison](docs/SKILLBANK_VS_N8N.md))
+    
+-   **Knowledge Graph of Capabilities**
+    -   7 edge types: ENABLES, USES, REQUIRES, PRODUCES_INPUT_FOR, SIMILAR_TO, ALTERNATIVE_TO, COMPLEMENTS
+    -   Graph suggests workflows: "If you need A, you probably also need B"
+    -   Automatic dependency resolution
+    
+-   **Smart Discovery**
+    -   Query: "verificar pagos en stripe y generar reporte"
+    -   Returns: stripe_api_handler + pdf_report_generator + suggested execution flow
+    -   Filters by available tools (compatibility check)
+
+See [SKILLBANK.md](SKILLBANK.md) for complete documentation.
 
 ### 🎯 Core Capabilities
 
@@ -183,6 +216,8 @@ For detailed testing information, see [TESTING.md](TESTING.md).
 
 ### Quick Start
 
+### Document RAG (Original)
+
 ```bash
 # 1. Index some documents
 npx tsx src/cli/indexFile.ts docs/example.md ml-guide
@@ -193,9 +228,8 @@ npx tsx src/cli/buildGraph.ts same-topic
 # 3. Start the server & open Web UI
 npm run server
 # Open http://localhost:3000 in your browser!
-npm run server
 
-# 4. Try graph-aware RAG (recommended)
+# 4. Try document RAG (graph-aware)
 curl -X POST http://localhost:3000/api/query/smart \
   -H "Content-Type: application/json" \
   -d '{
@@ -205,10 +239,60 @@ curl -X POST http://localhost:3000/api/query/smart \
     "maxHops": 1
   }'
 
-# 5. Compare with classic RAG (baseline)
+# 5. Compare with classic document RAG
 curl -X POST http://localhost:3000/api/query/classic \
   -H "Content-Type: application/json" \
   -d '{"query": "What is deep learning?", "k": 3}'
+```
+
+### Skill Bank (Experimental) 🤖 NEW!
+
+```bash
+# 1. Run demo (registers example tools & skills)
+npx tsx examples/demo-skillbank.ts
+
+# 2. Start server
+npm run server
+
+# 3. Discover capabilities for a task
+curl -X POST http://localhost:3000/api/skillbank/discover \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "verificar pagos en stripe y generar reporte PDF",
+    "expandGraph": true,
+    "k": 5
+  }'
+
+# Returns: stripe_api_handler skill + pdf_report_generator + suggested flow
+
+# 4. Execute a skill (dry run)
+curl -X POST http://localhost:3000/api/skillbank/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "targetId": "stripe_api_handler",
+    "targetType": "skill",
+    "input": { "action": "list_customers" },
+    "options": { "dryRun": true }
+  }'
+```
+
+See [SKILLBANK.md](SKILLBANK.md) for complete Skill Bank documentation.
+
+**6-Layer Stack:**
+```
+Layer 6: Memory & Learning ⭐ → Learns and personalizes (Q4 2025)
+Layer 5: Documents 📚       → Provides context (Integrated)
+Layer 4: Sub-Agents 🤖      → Specializes and delegates (Q3 2025)
+Layer 3: Credentials 🔐     → Secures and audits (Q2 2025)
+Layer 2: Skills             → Structures knowledge (✅ Implemented)
+Layer 1: Tools              → Executes actions (✅ Implemented)
+```
+
+**Complete Documentation:**
+- [SKILLBANK.md](SKILLBANK.md) - Overview and quick start
+- [SKILLBANK_VISION.md](SKILLBANK_VISION.md) - Complete vision (v1.0 → v4.0)
+- [docs/SKILLBANK_MEMORY_AND_LEARNING.md](docs/SKILLBANK_MEMORY_AND_LEARNING.md) - Memory layer design
+- [docs/SKILLBANK_FULL_STACK.md](docs/SKILLBANK_FULL_STACK.md) - Architecture and roadmap
 ```
 
 ### How It Works

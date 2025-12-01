@@ -1,0 +1,127 @@
+id: pdf_report_generator
+name: PDF Report Generator
+type: skill
+category: generation
+tags:
+  - reports
+  - pdf
+  - documents
+  - generation
+version: "1.0.0"
+
+usesTools:
+  - code_executor
+  - file_write
+
+overview: |
+  Genera reportes en formato PDF a partir de datos estructurados.
+  Usa code_executor para ejecutar script Python con libreria ReportLab
+  y file_write para guardar el PDF resultante.
+  Soporta tablas, graficos, imagenes y multiples estilos.
+
+instructions:
+  steps:
+    - Recibir datos estructurados para el reporte (JSON)
+    - Diseñar estructura del reporte (titulo, secciones, tablas)
+    - Generar script Python que use ReportLab para crear el PDF
+    - Ejecutar script usando code_executor tool
+    - Capturar PDF generado (base64) de la salida del script
+    - Usar file_write tool para guardar el PDF en filesystem
+    - Retornar ruta del archivo y metadata del reporte
+  
+  prerequisites:
+    - Python con libreria reportlab instalada en el sandbox
+    - Datos de entrada en formato JSON valido
+    - Permisos de escritura en el directorio de salida
+  
+  bestPractices:
+    - Validar estructura de datos antes de generar script
+    - Incluir fecha y hora de generacion en el reporte
+    - Añadir paginacion automatica para reportes largos
+    - Usar estilos consistentes (fuentes, colores)
+    - Incluir tabla de contenidos para reportes de +5 paginas
+    - Generar thumbnail/preview del PDF
+  
+  antiPatterns:
+    - NO generar PDFs de mas de 100 paginas sin paginacion
+    - NO incluir imagenes sin comprimir (usar JPEG con calidad 85)
+    - NO hardcodear paths absolutos en el script
+    - NO ignorar errores del code_executor
+
+parameters:
+  - name: data
+    type: object
+    required: true
+    description: Datos estructurados para el reporte
+  
+  - name: title
+    type: string
+    required: true
+    description: Titulo del reporte
+  
+  - name: sections
+    type: array
+    required: false
+    description: Secciones del reporte (array de objetos)
+  
+  - name: outputPath
+    type: string
+    required: false
+    description: Ruta donde guardar el PDF
+    default: ./reports/report.pdf
+  
+  - name: style
+    type: string
+    required: false
+    description: Estilo visual del reporte
+    enum: [corporate, minimal, colorful]
+    default: corporate
+
+outputs:
+  - name: filePath
+    type: string
+    description: Ruta del PDF generado
+  
+  - name: fileSize
+    type: number
+    description: Tamaño del archivo en bytes
+  
+  - name: pages
+    type: number
+    description: Numero de paginas del reporte
+
+examples:
+  - situation: Generar reporte de ventas mensual
+    input:
+      title: "Reporte de Ventas - Enero 2024"
+      data:
+        totalSales: 15000
+        transactions: 42
+        topProducts: [...]
+      outputPath: ./reports/sales_jan_2024.pdf
+      style: corporate
+    expectedOutput: |
+      PDF de 3 paginas con graficos de ventas y tabla de productos
+    notes: Incluir grafico de barras para ventas por dia
+  
+  - situation: Reporte de clientes activos
+    input:
+      title: "Clientes Activos - Q1 2024"
+      data:
+        customers: [...]
+        totalActive: 127
+      style: minimal
+    expectedOutput: |
+      PDF simple con lista de clientes y totales
+
+errorHandling:
+  commonErrors:
+    - "Python import error - Libreria reportlab no disponible"
+    - "Timeout - Datos muy grandes, reducir o paginar"
+    - "File write error - Permisos insuficientes o disco lleno"
+  
+  recovery:
+    - Para errores de import - Verificar sandbox Python
+    - Para timeout - Dividir datos en chunks y generar multiples PDFs
+    - Para errores de escritura - Verificar permisos y espacio en disco
+

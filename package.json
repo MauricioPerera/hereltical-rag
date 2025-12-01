@@ -8,7 +8,13 @@
     "server": "tsx src/server.ts",
     "dev": "tsx watch src/server.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:skills": "vitest run src/skills",
+    "test:skills:watch": "vitest src/skills",
+    "test:skills:coverage": "vitest run src/skills --coverage",
+    "demo:skillbank": "tsx examples/demo-skillbank.ts",
+    "demo:atomic": "tsx examples/demo-atomic-tools.ts",
+    "demo:rag": "tsx examples/demo-rag-integration.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +27,7 @@
     "lowdb": "^7.0.1",
     "openai": "^6.9.1",
     "sqlite-vec": "^0.1.1",
+    "yaml": "^2.8.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

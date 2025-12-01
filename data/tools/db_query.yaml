@@ -1,0 +1,92 @@
+id: db_query
+name: Database Query Executor
+type: tool
+category: data
+description: |
+  Ejecuta queries SQL en base de datos relacional.
+  Soporta SELECT, INSERT, UPDATE, DELETE con prepared statements.
+  Maneja transacciones, rollback y pool de conexiones.
+  Tool atomica y generica para cualquier operacion de base de datos.
+tags:
+  - database
+  - sql
+  - data
+  - crud
+
+inputSchema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: Query SQL a ejecutar (con placeholders ?)
+    params:
+      type: array
+      description: Parametros para el prepared statement
+    transaction:
+      type: boolean
+      description: Ejecutar en transaccion (default false)
+  required:
+    - query
+
+outputSchema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    rows:
+      type: array
+      description: Filas retornadas (para SELECT)
+    affectedRows:
+      type: number
+      description: Filas afectadas (para INSERT/UPDATE/DELETE)
+    insertId:
+      type: number
+      description: ID generado (para INSERT con AUTO_INCREMENT)
+    error:
+      type: string
+      description: Mensaje de error si falla
+
+implementation:
+  type: internal
+  ref: executor/database
+  config:
+    driver: better-sqlite3
+    poolSize: 10
+    timeout: 5000
+
+examples:
+  - description: SELECT simple
+    input:
+      query: SELECT * FROM users WHERE email = ?
+      params: [user@example.com]
+    expectedOutput:
+      success: true
+      rows: [{ id: 1, email: user@example.com, ... }]
+  
+  - description: INSERT con prepared statement
+    input:
+      query: INSERT INTO users (email, password_hash) VALUES (?, ?)
+      params: [new@example.com, $2b$10$...]
+    expectedOutput:
+      success: true
+      insertId: 42
+      affectedRows: 1
+  
+  - description: UPDATE con WHERE clause
+    input:
+      query: UPDATE users SET last_login = ? WHERE id = ?
+      params: [2024-01-15 10:30:00, 1]
+    expectedOutput:
+      success: true
+      affectedRows: 1
+
+limitations:
+  - Timeout de 5 segundos por query
+  - Maximo 1000 filas retornadas por defecto
+  - No soporta queries que modifican schema (DDL)
+  - Requiere prepared statements (no raw SQL)
+
+costPerCall: 0.001
+
+version: "1.0.0"
+

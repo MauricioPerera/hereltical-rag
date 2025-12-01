@@ -1,0 +1,174 @@
+id: create_cornell_notes
+name: Create Cornell Notes
+type: skill
+skillType: instructional
+category: productivity
+tags:
+  - notes
+  - methodology
+  - learning
+  - study
+version: "1.0.0"
+
+usesTools: []  # No tools needed!
+nativeCapabilities:
+  - text_analysis
+  - text_generation
+  - structuring
+
+overview: |
+  Guía para crear notas usando el método Cornell desarrollado en Cornell University.
+  El agente usa sus capacidades nativas de análisis y generación de texto.
+  No requiere herramientas externas, solo capacidad de procesamiento de lenguaje.
+
+instructions:
+  methodology: |
+    Método Cornell de Notas:
+    
+    Estructura de 3 secciones:
+    1. Cue Column (izquierda, 30% del ancho): Preguntas clave, conceptos, palabras clave
+    2. Note-taking Column (derecha, 70% del ancho): Notas principales, detalles, ejemplos
+    3. Summary Section (abajo, full width): Resumen conciso de 5-7 líneas
+    
+    Filosofía: Las notas se toman durante lectura/clase (Note column),
+    las preguntas se agregan después para facilitar revisión (Cue column),
+    y el resumen sintetiza todo al final.
+  
+  steps:
+    - Leer el texto completo para comprender el contexto
+    - Identificar conceptos principales, temas y subtemas
+    - Extraer detalles importantes, ejemplos y datos clave
+    - Crear la columna de notas con la información principal
+    - Generar preguntas provocadoras para la columna Cue
+    - Escribir resumen conciso que capture la esencia
+    - Formatear en markdown con tabla de 2 columnas
+  
+  prerequisites:
+    - Texto o contenido a resumir/estudiar
+    - Ninguna herramienta externa necesaria
+  
+  bestPractices:
+    - Preguntas Cue deben ser específicas y provocar reflexión
+    - Usar "¿Qué...?", "¿Cómo...?", "¿Por qué...?" en Cue column
+    - Notas deben usar bullet points, no párrafos largos
+    - Incluir ejemplos concretos en las notas
+    - Resumen debe ser independiente (comprensible sin leer notas)
+    - Usar abreviaciones consistentes
+    - Mantener jerarquía visual clara
+  
+  antiPatterns:
+    - NO copiar texto literal sin procesar
+    - NO hacer preguntas vagas o muy generales en Cue
+    - NO escribir párrafos extensos en las notas
+    - NO omitir el resumen (es crucial para revisión rápida)
+    - NO mezclar múltiples temas en una sola página de notas
+
+template: |
+  # Notas Cornell: [Título del Tema]
+  
+  | Cue Column (Preguntas) | Notes (Notas Principales) |
+  |------------------------|---------------------------|
+  | ¿Pregunta clave 1? | • Punto principal<br>• Detalle importante<br>• Ejemplo relevante |
+  | ¿Concepto central? | • Definición<br>• Características<br>• Aplicaciones |
+  | ¿Cómo funciona X? | • Paso 1<br>• Paso 2<br>• Resultado |
+  
+  ## Summary
+  
+  [Resumen de 5-7 líneas que captura la esencia del contenido.
+  Debe ser comprensible por sí solo sin necesidad de leer las notas.
+  Incluye los puntos más importantes y la conclusión principal.]
+  
+  ---
+  
+  **Fecha:** [YYYY-MM-DD]
+  **Fuente:** [Libro, artículo, clase, etc.]
+
+parameters:
+  - name: text
+    type: string
+    required: true
+    description: Texto o contenido del cual crear las notas Cornell
+  
+  - name: title
+    type: string
+    required: false
+    description: Título para las notas (se infiere del contenido si se omite)
+  
+  - name: focus
+    type: string
+    required: false
+    description: Aspecto específico en el que enfocarse (opcional)
+
+outputs:
+  - name: cornellNotes
+    type: string
+    description: Notas formateadas en método Cornell (markdown)
+  
+  - name: metadata
+    type: object
+    description: Info adicional (palabra count, tiempo estimado de revisión)
+
+examples:
+  - situation: Crear notas Cornell de un artículo sobre fotosíntesis
+    input:
+      text: |
+        La fotosíntesis es el proceso por el cual las plantas convierten
+        luz solar en energía química. Ocurre principalmente en los cloroplastos
+        y tiene dos fases: reacciones luminosas y ciclo de Calvin...
+      title: Fotosíntesis - Proceso Fundamental
+    expectedOutput: |
+      # Notas Cornell: Fotosíntesis - Proceso Fundamental
+      
+      | Cue Column | Notes |
+      |------------|-------|
+      | ¿Qué es fotosíntesis? | • Proceso de conversión luz → energía química<br>• Ocurre en plantas<br>• Fundamental para vida |
+      | ¿Dónde ocurre? | • Principalmente en cloroplastos<br>• Células de hojas verdes |
+      | ¿Cuáles son las fases? | • Reacciones luminosas (luz requerida)<br>• Ciclo de Calvin (fase oscura)<br>• Ambas complementarias |
+      
+      ## Summary
+      
+      La fotosíntesis es el proceso fundamental por el cual las plantas
+      convierten luz solar en energía química. Ocurre en los cloroplastos
+      y consta de dos fases: reacciones luminosas y ciclo de Calvin.
+      Este proceso es esencial para la vida en la Tierra.
+    notes: |
+      Agente usa capacidad nativa de LLM para:
+      - Analizar y extraer conceptos clave
+      - Generar preguntas provocadoras
+      - Estructurar información jerárquicamente
+      - Sintetizar resumen conciso
+      No ejecuta ninguna tool externa.
+  
+  - situation: Notas de una reunión de trabajo
+    input:
+      text: |
+        Reunión de planificación Q1. Presentes: equipo de producto.
+        Decisiones: lanzar feature X en febrero, postponer feature Y,
+        contratar 2 desarrolladores. Budget aprobado: $50k...
+      title: Planificación Q1 - Reunión
+    expectedOutput: |
+      # Notas Cornell: Planificación Q1
+      
+      | Cue Column | Notes |
+      |------------|-------|
+      | ¿Qué se decidió? | • Launch feature X (febrero)<br>• Postpone feature Y<br>• Hiring: 2 devs |
+      | ¿Presupuesto? | • Aprobado: $50k<br>• Para Q1 |
+      | ¿Próximos pasos? | • Publicar job posting<br>• Spec detallado feature X |
+      
+      ## Summary
+      
+      Reunión de planificación Q1 con equipo de producto. Decisión principal:
+      lanzar feature X en febrero y postponer Y. Aprobado hiring de 2 desarrolladores
+      y budget de $50k. Acción inmediata: publicar job postings y spec de feature X.
+
+errorHandling:
+  commonErrors:
+    - "Texto muy corto - Notas Cornell funcionan mejor con contenido sustancial (500+ palabras)"
+    - "Contenido sin estructura - Difícil generar preguntas clave"
+  
+  recovery:
+    - Para texto corto - Sugerir formato simple de notas en lugar de Cornell
+    - Para contenido desestructurado - Primero identificar temas, luego aplicar método
+
+requiresExternalServices: false  # Pure LLM capability
+

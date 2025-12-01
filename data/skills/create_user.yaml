@@ -1,0 +1,128 @@
+id: create_user
+name: Create User
+type: skill
+category: crud
+tags:
+  - users
+  - registration
+  - authentication
+  - crud
+version: "1.0.0"
+
+usesTools:
+  - db_query
+
+overview: |
+  Crea un nuevo usuario en la tabla users de la base de datos.
+  Valida unicidad de email, hashea password con bcrypt, asigna role por defecto.
+  Retorna el user_id generado y confirma creacion exitosa.
+
+instructions:
+  steps:
+    - Validar formato de email (regex RFC 5322)
+    - Verificar que email no existe (SELECT COUNT(*) FROM users WHERE email = ?)
+    - Hashear password con bcrypt (10 rounds, salt aleatorio)
+    - Generar timestamp created_at (NOW())
+    - Asignar role por defecto (user, no admin)
+    - Preparar query INSERT INTO users (email, password_hash, role, created_at) VALUES (?, ?, ?, ?)
+    - Ejecutar db_query tool con prepared statement
+    - Verificar que insertId > 0
+    - Loguear creacion de usuario (sin incluir password)
+    - Retornar user_id y email
+  
+  prerequisites:
+    - Tabla users existe con columnas (id, email, password_hash, role, created_at)
+    - Email debe ser unico (constraint UNIQUE)
+    - Libreria bcrypt disponible para hashing
+  
+  bestPractices:
+    - SIEMPRE usar prepared statements (nunca concatenar strings)
+    - Validar email antes de INSERT para evitar constraint errors
+    - Hashear password con al menos 10 rounds de bcrypt
+    - Loguear creacion pero NUNCA loguear passwords
+    - Retornar solo datos publicos (no password_hash)
+    - Enviar email de verificacion despues de crear usuario
+  
+  antiPatterns:
+    - NO insertar password en texto plano
+    - NO concatenar valores en query (SQL injection risk)
+    - NO loguear password_hash en logs
+    - NO permitir emails duplicados (verificar antes)
+    - NO asignar role=admin por defecto
+    - NO olvidar validar formato de email
+
+parameters:
+  - name: email
+    type: string
+    required: true
+    description: Email del nuevo usuario (debe ser unico)
+  
+  - name: password
+    type: string
+    required: true
+    description: Password en texto plano (sera hasheado)
+  
+  - name: role
+    type: string
+    required: false
+    description: Role del usuario
+    enum: [user, admin, moderator]
+    default: user
+  
+  - name: metadata
+    type: object
+    required: false
+    description: Metadata adicional (nombre, telefono, etc)
+
+outputs:
+  - name: userId
+    type: number
+    description: ID del usuario creado (AUTO_INCREMENT)
+  
+  - name: email
+    type: string
+    description: Email confirmado del usuario
+  
+  - name: createdAt
+    type: string
+    description: Timestamp de creacion (ISO 8601)
+
+examples:
+  - situation: Registrar nuevo usuario estandar
+    input:
+      email: johndoe@example.com
+      password: SecurePass123!
+    expectedOutput: |
+      { userId: 42, email: johndoe@example.com, createdAt: 2024-01-15T10:30:00Z }
+    notes: Password sera hasheado con bcrypt, role=user por defecto
+  
+  - situation: Crear usuario administrador
+    input:
+      email: admin@company.com
+      password: AdminPass456!
+      role: admin
+    expectedOutput: |
+      { userId: 43, email: admin@company.com, createdAt: 2024-01-15T10:31:00Z }
+    notes: Requiere permisos elevados para asignar role=admin
+  
+  - situation: Error por email duplicado
+    input:
+      email: existing@example.com
+      password: Pass789
+    expectedOutput: |
+      ERROR: Email already exists
+    notes: La validacion previa debe detectar esto antes del INSERT
+
+errorHandling:
+  commonErrors:
+    - "UNIQUE constraint failed - Email ya existe en la base de datos"
+    - "Invalid email format - Email no cumple RFC 5322"
+    - "Password too weak - Debe tener minimo 8 caracteres"
+    - "Database timeout - Query tardo mas de 5 segundos"
+  
+  recovery:
+    - Para email duplicado - Sugerir login o recuperacion de password
+    - Para formato invalido - Validar email con regex antes de intentar
+    - Para timeout - Reintentar con backoff exponencial
+    - Para errores de DB - Loguear error completo y notificar admin
+

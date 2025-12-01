@@ -9,6 +9,8 @@ import { docsRouter } from './routes/docs.js';
 import { healthRouter } from './routes/health.js';
 import graphRouter from './routes/graph.js';
 import monitoringRouter, { recordRequest } from './routes/monitoring.js';
+import skillbankRouter from './routes/skillbank.js';
+import analyticsRouter from './routes/analytics.js';
 import { rateLimitPresets, initAuth, authenticate, getAuthStatus, getRateLimitStats } from '../middleware/index.js';
 import { getAllCacheStats } from '../cache/queryCache.js';
 
@@ -55,6 +57,8 @@ export function createApp(): Express {
     app.use('/api/docs', docsRouter);
     app.use('/api/graph', graphRouter);
     app.use('/api/monitoring', monitoringRouter);
+    app.use('/api/skillbank', skillbankRouter);
+    app.use('/api/skillbank/analytics', analyticsRouter);
     
     // Status endpoint (quick overview)
     app.get('/api/status', (req: Request, res: Response) => {
@@ -87,7 +91,8 @@ export function createApp(): Express {
                     query: '/api/query',
                     querySmartGraph: '/api/query/smart',
                     docs: '/api/docs',
-                    graph: '/api/graph'
+                    graph: '/api/graph',
+                    skillbank: '/api/skillbank'
                 }
             });
         }
@@ -141,6 +146,8 @@ export async function startServer(): Promise<void> {
         console.log(`   - POST /api/graph/extract-entities (NER)`);
         console.log(`   - GET  /api/graph/stats`);
         console.log(`   - GET  /api/docs`);
+        console.log(`   - POST /api/skillbank/discover ⭐ (skill discovery)`);
+        console.log(`   - POST /api/skillbank/execute (run tool/skill)`);
         console.log('\n Press Ctrl+C to stop\n');
     });
 }

@@ -1,0 +1,89 @@
+id: data_fetcher
+name: Data Fetcher
+type: skill
+category: data
+tags:
+  - data
+  - api
+  - integration
+version: "1.0.0"
+
+usesTools:
+  - http_request
+
+overview: |
+  Obtiene datos de multiples fuentes externas via APIs REST.
+  Normaliza respuestas de diferentes formatos (JSON, XML) a estructura uniforme.
+  Soporta paginacion, filtros y agregaciones basicas.
+
+instructions:
+  steps:
+    - Identificar la fuente de datos (API endpoint, parametros)
+    - Preparar request con autenticacion apropiada
+    - Ejecutar http_request tool con configuracion correcta
+    - Parsear respuesta (JSON/XML) a estructura uniforme
+    - Si hay paginacion, iterar hasta obtener todos los datos
+    - Aplicar filtros y transformaciones si se requieren
+    - Retornar datos normalizados
+  
+  prerequisites:
+    - Credenciales de API si la fuente requiere autenticacion
+    - Conocer estructura de respuesta de la API
+  
+  bestPractices:
+    - Implementar cache para datos que cambian poco
+    - Respetar rate limits de las APIs
+    - Usar paginacion para datasets grandes
+    - Validar estructura de respuesta antes de procesar
+  
+  antiPatterns:
+    - NO hacer requests en loop sin delay (causar rate limiting)
+    - NO asumir estructura fija sin validacion
+
+parameters:
+  - name: source
+    type: string
+    required: true
+    description: URL o identificador de la fuente de datos
+  
+  - name: filters
+    type: object
+    required: false
+    description: Filtros a aplicar (query params)
+  
+  - name: maxResults
+    type: number
+    required: false
+    description: Numero maximo de resultados
+    default: 100
+
+outputs:
+  - name: data
+    type: array
+    description: Array de objetos con los datos obtenidos
+  
+  - name: count
+    type: number
+    description: Numero de items retornados
+  
+  - name: hasMore
+    type: boolean
+    description: Si hay mas datos disponibles (paginacion)
+
+examples:
+  - situation: Obtener ultimos 50 posts de un blog
+    input:
+      source: https://api.blog.com/posts
+      maxResults: 50
+    expectedOutput: |
+      Array de 50 posts con titulo, contenido, fecha
+
+errorHandling:
+  commonErrors:
+    - "Network timeout - API lenta o no disponible"
+    - "Invalid credentials - Token expirado o invalido"
+  
+  recovery:
+    - Reintentar con backoff exponencial
+    - Refrescar tokens de autenticacion
+
